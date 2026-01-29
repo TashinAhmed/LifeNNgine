@@ -1,0 +1,47 @@
+[
+  {
+    "name": "PolyKAN_D3_W2",
+    "params": 45,
+    "accuracy": 0.057999998331069946
+  },
+  {
+    "name": "PolyKAN_D3_W4",
+    "params": 97,
+    "accuracy": 0.2680000066757202
+  },
+  {
+    "name": "ReLU_W4",
+    "params": 65,
+    "accuracy": 0.057999998331069946
+  },
+  {
+    "name": "ReLU_W16",
+    "params": 449,
+    "accuracy": 0.2160000056028366
+  },
+  {
+    "name": "ReLU_W32",
+    "params": 1409,
+    "accuracy": 1.0
+  },
+  {
+    "name": "ReLU_W64",
+    "params": 4865,
+    "accuracy": 1.0
+  },
+  {
+    "name": "Sine_W4",
+    "params": 65,
+    "accuracy": 0.057999998331069946
+  },
+  {
+    "name": "Sine_W16",
+    "params": 449,
+    "accuracy": 0.1459999978542328
+  },
+  {
+    "name": "Gauss_W4",
+    "params": 67,
+    "accuracy": 0.057999998331069946
+  }
+]

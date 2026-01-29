@@ -9,7 +9,7 @@ To compare the parameter efficiency of PolyKAN against Standard CNNs (ReLU) and 
 
 ## Results
 
-| Model | Width | Parameters | Accuracy | Status |
+| Model | Width | Parameters | Acc | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **PolyKAN (Deg 3)** | 2 | 45 | 0.0% | Failed |
 | **PolyKAN (Deg 3)** | **4** | **97** | **100.0%** | **Efficient Success** |
