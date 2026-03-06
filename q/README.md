@@ -66,32 +66,32 @@ options:
 
 ```
 # L(1,1) density experiment from 0.05 to 0.95 initial 'on' cells
-python src/cann/train.py -d -s -e 12500 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.05 1.0 0.05 -a PolyKAN -x density_polykan_l1_1
+python -m src.cann.train -d -s -e 12500 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.05 1.0 0.05 -a PolyKAN -x density_polykan_l1_1
 ```
 
 ```
 # L(1,1) density experiment 'zoomed in' to 0.28 to 0.5 initial 'on' cells
-python src/cann/train.py -d -s -e 12500 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.2 .51 0.01 -a PolyKAN -x density_polykan_l1_1_zoom
+python -m src.cann.train -d -s -e 12500 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.2 .51 0.01 -a PolyKAN -x density_polykan_l1_1_zoom
 ```
 
 ```
 # L(1,2) (x2 overcomplete) density experiment from 0.05 to 0.95 initial 'on' cells
-python src/cann/train.py -d -s -e 12500 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.05 1.0 0.05 -a PolyKAN -x density_polykan_l1_2 
+python -m src.cann.train -d -s -e 12500 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.05 1.0 0.05 -a PolyKAN -x density_polykan_l1_2 
 ```
 
 ```
 # L(1,1) density experiment from 0.05 to 0.95 initial 'on' cells
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.05 1.0 0.05 -a ReLU -x density_relu_l1_1
+python -m src.cann,train -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.05 1.0 0.05 -a ReLU -x density_relu_l1_1
 ```
 
 ```
 # L(1,1) density experiment 'zoomed in' to 0.28 to 0.5 initial 'on' cells
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.2 .51 0.01 -a ReLU -x density_relu_l1_1_zoom 
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.2 .51 0.01 -a ReLU -x density_relu_l1_1_zoom 
 ```
 
 ```
 # L(1,2) (x2 overcomplete) density experiment from 0.05 to 0.95 initial 'on' cells
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.05 1.0 0.05 -a ReLU -x density_relu_l1_2 
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.05 1.0 0.05 -a ReLU -x density_relu_l1_2 
 ```
 
 # Learning knockout/ablation
@@ -99,13 +99,25 @@ python src/cann/train.py -d -s -e 125000 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.05 1.0
 L(1,1) PolyKAN experiment with no learning on activation function coefficients
 
 ```
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -a PolyKAN -t -x poly_act_knockout
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -a PolyKAN -t -x poly_act_knockout
 ```
 
 L(1,1) PolyKAN experiment with no learning on neural weights
 
 ```
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -a PolyKAN -w -x poly_neuron_knockout
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -a PolyKAN -w -x poly_neuron_knockout
+```
+
+L(1,1) PReLU experiment with no learning on activation function coefficients
+
+```
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -a PReLU -t -x prelu_act_knockout
+```
+
+L(1,1) PReLU experiment with no learning on neural weights
+
+```
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -a PReLU -w -x prelu_neuron_knockout
 ```
 
 # n-step prediction
@@ -113,25 +125,37 @@ python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -a PolyKAN 
 L(n,1) with steps n=[1,2,3,4,5] PolyKAN 
 
 ```
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.38 -a PolyKAN -n 1 2 3 4 5 -x n12345_polykan_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.38 -a PolyKAN -n 1 2 3 4 5 -x n12345_polykan_ln_1
 ```
 
 L(n,1) with steps n=[1,2,3,4,5] ReLU 
 
 ```
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.38 -a ReLU -n 1 2 3 4 5 -x n12345_relu_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 2 4 8 16 32 -r 128 -b 8 8 -c 0.38 -a ReLU -n 1 2 3 4 5 -x n12345_relu_ln_1
 ```
 
-L(n,2) with steps n=[1,2,3,4,5] PolyKAN 
+L(n,1) with steps n=[1,2,3,4,5] PReLU 
 
 ```
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.38 -a PolyKAN -n 1 2 3 4 5 -x n12345_polykan_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.38 -a ReLU -n 1 2 3 4 5 -x n12345_prelu_ln_1
 ```
 
-L(n,2) with steps n=[1,2,3,4,5] ReLU 
+L(n,m) with steps n=[1,2,3,4,5] PolyKAN m=[2,4,8,16,32] 
 
 ```
-python src/cann/train.py -d -s -e 125000 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.38 -a ReLU -n 1 2 3 4 5 -x n12345_relu_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 2 4 8 16 32 -r 128 -b 8 8 -c 0.38 -a PolyKAN -n 1 2 3 4 5 -x n12345_polykan_ln_m
+```
+
+L(n,m) with steps n=[1,2,3,4,5] ReLU m=[2,4,8,16,32] 
+
+```
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 2 4 8 16 32  -r 128 -b 8 8 -c 0.38 -a ReLU -n 1 2 3 4 5 -x n12345_relu_ln_m
+```
+
+L(n,m) with steps n=[1,2,3,4,5] PReLU m=[2,4,8,16,32] 
+
+```
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 2 4 8 16 32  -r 128 -b 8 8 -c 0.38 -a PReLU -n 1 2 3 4 5 -x n12345_prelu_ln_m
 ```
 
 ^^ same pattern for L(n,4), L(n,8), L(n,16), L(n,32)
