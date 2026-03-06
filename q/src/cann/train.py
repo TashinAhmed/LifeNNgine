@@ -1,3 +1,5 @@
+import sys
+import subprocess
 import argparse
 import os
 
@@ -19,11 +21,35 @@ import matplotlib.pyplot as plt
 import pandas as pd
 #import duckdb
 
-ACT_DICT = dict(relu=nn.ReLU(), \
-    celu=nn.CELU(),\
-    tanh=nn.Tanh(),\
-    sigmoid=nn.Sigmoid(),\
-    leakyrelu=nn.LeakyReLU())
+BIG_PRIME = 7919 # a big prime number used for seeds
+ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
+    celu=lambda **kwargs: nn.CELU(),\
+    prelu=lambda wd: nn.PReLU(num_parameters=wd),\
+    tanh=lambda **kwargs: nn.Tanh(),\
+    sigmoid=lambda **kwargs: nn.Sigmoid(),\
+    leakyrelu=lambda **kwargs: nn.LeakyReLU())
+
+def get_cli_args() -> str:
+  
+  sorted_args = []
+  for arg_index in range(0, len(args_list)):
+
+    if "-" in args_list[arg_index]:
+      sorted_args.append([args_list[arg_index]])
+    else:
+      sorted_args[-1].append(args_list[arg_index])
+
+  sorted_args.sort()
+  entry_point.extend(sorted_args)
+  string_args = str(entry_point).replace("[","").replace("]","").replace(",","").replace("'","")
+  return string_args
+
+def get_git_hash() -> str:
+
+  hash_command = ["git", "rev-parse", "--verify", "HEAD"]
+  git_hash = subprocess.check_output(hash_command)
+
+  return git_hash.decode("utf8").replace("\n","")
 
 def seed_all(my_seed):
   np.random.seed(my_seed)
@@ -94,14 +120,274 @@ def mkdir_w_parents(exp_dir):
     else:
       os.mkdir(exp_dir)
 
+def train_model(my_seed: int=1337,\
+    experiment_name: str="default",\
+    run_number: int=0,\
+    ca_rule: str="B3/S23",\
+    lr: float=0.001,\
+    density: float=0.5,\
+    disp_every: int=10,\
+    loss_weighting: bool=False,\
+    activation_name: str="relu",\
+    degree: int=2,\
+    depth: int=1,\
+    width: int=1,\
+    trainable_weights: bool=True,\
+    trainable_activations: bool=True,\
+    do_logging: bool=False,\
+    log_filename: str="",\
+    early_stopping: bool=False,\
+    epoch_size: int=8,\
+    minibatch_size: int=8,\
+    epochs: int=10,\
+    dim: int=32,\
+    ca_step: int=1,\
+    git_hash: str="",\
+    entry_point: str="",\
+    params=None
+    ):
+
+  if git_hash == "":
+    # use subprocess to get the current git hash, store
+    git_hash = get_git_hash()
+
+  # set up logging, experiment directory
+  if do_logging:
+    t00 = time.time()
+    exp_dir = os.path.join("results", experiment_name)
+    log_filename = os.path.join(exp_dir, f"log.txt")
+    exp_results_filename = os.path.join(exp_dir, f"exp.csv")
+    if os.path.exists(exp_dir):
+      pass
+    else:
+      # make parents
+      mkdir_w_parents(exp_dir)
+  else:
+    log_filename = ""
+
+  # initialize lists for experiment results
+  run_filename = []
+  seed = []
+  exp_model_name = []
+  activation_name_list = []
+  degree_list = []
+  parameter_count = []
+  trainable_count = []
+  trainable_neurons = []
+  trainable_coefficients = []
+  density_0 = []
+  model_width = []
+  model_depth = []
+  exp_ca_steps = []
+  rulestring = []
+  final_cell_accuracy = []
+  final_grid_accuracy = []
+  final_loss = []
+  epoch_batch_size = []
+  mini_batch_size = []
+  total_samples = []
+  model_updates = []
+  wall_time = []
+  git_hashs = []
+  entry_points = []
+
+  seed_all(my_seed)
+  env = CARLE()
+  env.rules_from_string(ca_rule)
+
+  if "poly" in activation_name.lower():
+    if "mini" in activation_name.lower():
+      model = MiniPolyKAN(degree=degree, width=width, depth=depth, \
+          trainable_weights=trainable_weights, \
+          trainable_activations=trainable_activations)
+    else:
+      model = PolyKAN(degree=degree, width=width, depth=depth, \
+          trainable_weights=trainable_weights, \
+          trainable_activations=trainable_activations)
+
+  else:
+    my_act = ACT_DICT[activation_name.lower()]
+    activation = my_act #mbda wd: my_act(num_parameters=wd)
+    model = ActNN(degree=degree, width=width, activation=activation, depth=depth, \
+        trainable_weights=trainable_weights, \
+        trainable_activations=trainable_activations)
+
+  if params is None:
+    pass
+  else:
+    model.set_parameters(params)
+
+  if do_logging:
+    run_results_filename = os.path.join(exp_dir, f"run{run_number}.csv")
+    parameters_filename = os.path.join(exp_dir, f"parameters_{run_number}.npy")
+
+  # logging arrays
+  model_name = []
+  model_parameters = None
+  bce_loss = []
+  cell_accuracy = []
+  grid_accuracy = []
+
+  optimizer = Adam(model.parameters(), lr=lr)
+  loss_fn = F.binary_cross_entropy
+
+  my_model_name = model._get_name()
+  print_log(-1, 0.0, run_number=run_number, seed=my_seed,\
+      git_hash=git_hash,\
+      entry_point=entry_point,\
+      model_name=my_model_name, \
+      ca_rule=ca_rule,\
+      number_ca_steps=ca_step,\
+      density=density,\
+      parameter_count=model.count_parameters(), \
+      trainable_count=model.count_trainable(), \
+      learning_rate=lr, save_file=log_filename)
+
+  t0_run = time.time()
+  for epoch in range(epochs):
+    
+    x = 1.0 * (torch.rand(epoch_size, 1, dim, dim) > density)
+
+    with torch.no_grad():
+      y = 1 * x
+      
+      # n-step ca dynamics targets
+      for cas in range(ca_step):
+        y = env(y)
+
+      y_pred = model(x[:minibatch_size])
+      y_target = y[:minibatch_size]
+      loss = loss_fn(y_pred, y_target)
+
+    t0_epoch = time.time()
+    t1 = time.time()
+
+    if (epoch % disp_every) == 0 or epoch == (epochs-1):
+
+      loss, my_cell_accuracy, my_grid_accuracy = validate(\
+          env, model, ca_steps=ca_step, loss_fn=loss_fn)
+
+      elapsed_epoch = t1 - t0_epoch
+      elapsed_total = t1 - t0_run
+
+      model_name.append(my_model_name)
+      if model_parameters is None:
+        model_parameters = model.get_parameters()[None,:]
+      else:
+        model_parameters = np.append(model_parameters, model.get_parameters()[None,:], axis=0)
+
+      bce_loss.append(1.*loss)
+      cell_accuracy.append(1. * my_cell_accuracy)
+      grid_accuracy.append(1. * my_grid_accuracy)
+
+      print_log(epoch, elapsed_total, save_file=log_filename,\
+          bce_loss=bce_loss[-1], cell_accuracy=cell_accuracy[-1],\
+          grid_accuracy=grid_accuracy[-1])
+
+      if early_stopping:
+        if my_grid_accuracy == 1.0:
+          if solved:
+            # if ca is solved two updates in a row, consider it solved
+            assert grid_accuracy[-1] == 1.0
+            break
+          solved = 1
+        else:
+          solved = 0
+
+    for batch_idx in range(0, epoch_size, minibatch_size):
+
+      optimizer.zero_grad()
+      y_pred = model(x[batch_idx:batch_idx+minibatch_size])
+      y_target = y[batch_idx:batch_idx+minibatch_size]
+
+      if loss_weighting:
+
+        y_freq = y.mean()
+        loss_weight = 0 * y
+        loss_weight[y==0] = y_freq
+        loss_weight[y==1] = 1. - y_freq
+        loss = loss_fn(y_pred, y_target, weight=loss_weight)
+
+      else:
+        loss = loss_fn(y_pred, y_target)
+
+      loss.backward()
+      optimizer.step()
+
+    t1 = time.time()
+          
+  if do_logging:
+    # run results
+    run_df = make_df_from_kwargs(model_name=model_name, parameters_filename=parameters_filename,\
+        bce_loss=bce_loss, cell_accuracy=cell_accuracy, grid_accuracy=grid_accuracy)
+
+    run_df.to_csv(run_results_filename)
+    np.save(parameters_filename, model_parameters)
+
+    # experiment results (summmary)
+    run_filename.append(run_results_filename)
+    seed.append(my_seed)
+    exp_model_name.append(my_model_name)
+    activation_name_list.append(activation_name)
+    degree_list.append(degree)
+    trainable_count.append(model.count_trainable())
+    trainable_neurons.append(trainable_weights)
+    trainable_coefficients.append(trainable_activations)
+    density_0.append(density)
+    parameter_count.append(model.count_parameters())
+    model_width.append(model.width)
+    model_depth.append(model.depth)
+    exp_ca_steps.append(ca_step)
+    final_cell_accuracy.append(my_cell_accuracy)
+    final_grid_accuracy.append(my_grid_accuracy)
+    final_loss.append(loss)
+    epoch_batch_size.append(epoch_size)
+    mini_batch_size.append(minibatch_size)
+    total_samples.append((epoch+1) * epoch_size * minibatch_size)
+    model_updates.append((epoch+1) * (epoch_size // minibatch_size))
+    wall_time.append(time.time() - t00)
+    rulestring.append(ca_rule)
+    git_hashs.append(git_hash)
+    entry_points.append(entry_point)
+
+    exp_df = make_df_from_kwargs(run_filename=run_filename,\
+        seed=seed,\
+        model_name=exp_model_name,\
+        activation_name=activation_name_list,\
+        degree=degree_list,\
+        trainable_count=trainable_count,\
+        density_0=density_0,\
+        parameter_count=parameter_count,\
+        model_width=model_width,\
+        model_depth=model_depth,\
+        exp_ca_steps=exp_ca_steps,\
+        rulestring=rulestring,\
+        final_cell_accuracy=final_cell_accuracy,\
+        final_grid_accuracy=final_grid_accuracy,\
+        epoch_size=epoch_batch_size,\
+        batch_size=mini_batch_size,\
+        total_samples=total_samples,\
+        model_updates=model_updates,\
+        entry_point=entry_points,\
+        git_hash=git_hashs,\
+        wall_time=wall_time)
+
+    # concatenate if exp results file already exists
+    if os.path.exists(exp_results_filename):
+      exp_df_0 = pd.read_csv(exp_results_filename, index_col=0)
+      exp_df = pd.concat([exp_df_0, exp_df])
+
+    exp_df.to_csv(exp_results_filename)
+
 def train(**kwargs):
   # training details
-  big_prime = 7919 # a big prime number used for seeds
   base_seed = kwargs.get("pseudorandom_seed", 13)
   number_runs = kwargs.get("runs", 1)
   epochs = kwargs.get("epochs", 10)
   early_stopping = kwargs.get("early_stopping", False) 
   batches = kwargs.get("batches", [2048, 2048])
+  entry_point = kwargs.get("entry_point")
+  git_hash = kwargs.get("git_hash")
   if len(batches) == 2:
     epoch_size = batches[0] 
     minibatch_size = batches[1]
@@ -133,45 +419,6 @@ def train(**kwargs):
   trainable_activations = kwargs.get("trainable_activations", False)
   loss_weighting = kwargs.get("loss_weighting", False)
 
-
-  # set up logging, experiment directory
-
-  if do_logging:
-    t00 = time.time()
-    exp_dir = os.path.join("results", experiment_name)
-    log_filename = os.path.join(exp_dir, f"log.txt")
-    exp_results_filename = os.path.join(exp_dir, f"exp.csv")
-    if os.path.exists(exp_dir):
-      pass
-    else:
-      # make parents
-      mkdir_w_parents(exp_dir)
-  else:
-    log_filename = ""
-
-  # initialize lists for experiment results
-  run_filename = []
-  seed = []
-  exp_model_name = []
-  parameter_count = []
-  trainable_count = []
-  trainable_neurons = []
-  trainable_coefficients = []
-  density_0 = []
-  model_width = []
-  model_depth = []
-  exp_ca_steps = []
-  rulestring = []
-  final_cell_accuracy = []
-  final_grid_accuracy = []
-  final_loss = []
-  epoch_batch_size = []
-  mini_batch_size = []
-  total_samples = []
-  model_updates = []
-  wall_time = []
-
-  
   run_number = -1
 
   solved = 0
@@ -182,183 +429,33 @@ def train(**kwargs):
           for density in densities:
             for ca_step in ca_steps:
               depth = ca_step
-
               run_number += 1
 
-              # probably should seed each run, rather than once. 
-              my_seed = base_seed + run_number * big_prime 
-              seed_all(my_seed)
-              env = CARLE()
-              env.rules_from_string(ca_rule)
-
-              if "poly" in activation_name.lower():
-                if "mini" in activation_name.lower():
-                  model = MiniPolyKAN(degree=degree, width=width, depth=depth, \
-                      trainable_weights=trainable_weights, \
-                      trainable_activations=trainable_activations)
-                else:
-                  model = PolyKAN(degree=degree, width=width, depth=depth, \
-                      trainable_weights=trainable_weights, \
-                      trainable_activations=trainable_activations)
-
-              else:
-                my_act = ACT_DICT[activation_name.lower()]
-                activation = lambda **kwargs: my_act
-                model = ActNN(degree=degree, width=width, activation=activation, depth=depth, \
-                    trainable_weights=trainable_weights, \
-                    trainable_activations=trainable_activations)
-
-              if do_logging:
-                run_results_filename = os.path.join(exp_dir, f"run{run_number}.csv")
-                parameters_filename = os.path.join(exp_dir, f"parameters_{run_number}.npy")
-
-              # logging arrays
-              model_name = []
-              model_parameters = None
-              bce_loss = []
-              cell_accuracy = []
-              grid_accuracy = []
-
-              optimizer = Adam(model.parameters(), lr=lr)
-              loss_fn = F.binary_cross_entropy
-
-              my_model_name = model._get_name()
-              print_log(-1, 0.0, run_number=run_number, seed=my_seed,\
-                  model_name=my_model_name, \
-                  ca_rule=ca_rule,\
-                  number_ca_steps=ca_step,\
+              my_seed = base_seed + run_number * BIG_PRIME 
+              train_model(my_seed=my_seed,\
+                  experiment_name=experiment_name,\
+                  run_number=run_number,\
+                  lr=lr,\
                   density=density,\
-                  parameter_count=model.count_parameters(), \
-                  trainable_count=model.count_trainable(), \
-                  learning_rate=lr, save_file=log_filename)
+                  disp_every=disp_every,\
+                  ca_rule=ca_rule,\
+                  activation_name=activation_name,\
+                  degree=degree,\
+                  depth=depth,\
+                  width=width,\
+                  trainable_weights=trainable_weights,\
+                  trainable_activations=trainable_activations,\
+                  do_logging=do_logging,\
+                  early_stopping=early_stopping,\
+                  epoch_size=epoch_size,\
+                  minibatch_size=minibatch_size,\
+                  epochs=epochs,
+                  dim=dim,\
+                  ca_step=ca_step,\
+                  git_hash=git_hash,\
+                  entry_point=entry_point,\
+                  params=None)
 
-              t0_run = time.time()
-              for epoch in range(epochs):
-                
-                x = 1.0 * (torch.rand(epoch_size, 1, dim, dim) > density)
-
-                with torch.no_grad():
-                  y = 1 * x
-                  
-                  # n-step ca dynamics targets
-                  for cas in range(ca_step):
-                    y = env(y)
-
-                  y_pred = model(x[:minibatch_size])
-                  y_target = y[:minibatch_size]
-                  loss = loss_fn(y_pred, y_target)
-
-                t0_epoch = time.time()
-                t1 = time.time()
-
-                if (epoch % disp_every) == 0 or epoch == (epochs-1):
-
-                  loss, my_cell_accuracy, my_grid_accuracy = validate(\
-                      env, model, ca_steps=ca_step, loss_fn=loss_fn)
-
-                  elapsed_epoch = t1 - t0_epoch
-                  elapsed_total = t1 - t0_run
-
-                  model_name.append(my_model_name)
-                  if model_parameters is None:
-                    model_parameters = model.get_parameters()[None,:]
-                  else:
-                    model_parameters = np.append(model_parameters, model.get_parameters()[None,:], axis=0)
-
-                  bce_loss.append(1.*loss)
-                  cell_accuracy.append(1. * my_cell_accuracy)
-                  grid_accuracy.append(1. * my_grid_accuracy)
-
-                  print_log(epoch, elapsed_total, save_file=log_filename,\
-                      bce_loss=bce_loss[-1], cell_accuracy=cell_accuracy[-1],\
-                      grid_accuracy=grid_accuracy[-1])
-
-                  if early_stopping:
-                    if my_grid_accuracy == 1.0:
-                      if solved:
-                        # if ca is solved two updates in a row, consider it solved
-                        assert grid_accuracy[-1] == 1.0
-                        break
-                      solved = 1
-                    else:
-                      solved = 0
-
-                for batch_idx in range(0, epoch_size, minibatch_size):
-
-                  optimizer.zero_grad()
-                  y_pred = model(x[batch_idx:batch_idx+minibatch_size])
-                  y_target = y[batch_idx:batch_idx+minibatch_size]
-
-                  if loss_weighting:
-
-                    y_freq = y.mean()
-                    loss_weight = 0 * y
-                    loss_weight[y==0] = y_freq
-                    loss_weight[y==1] = 1. - y_freq
-                    loss = loss_fn(y_pred, y_target, weight=loss_weight)
-
-                  else:
-                    loss = loss_fn(y_pred, y_target)
-
-                  loss.backward()
-                  optimizer.step()
-
-                t1 = time.time()
-                      
-              if do_logging:
-                # run results
-                run_df = make_df_from_kwargs(model_name=model_name, parameters_filename=parameters_filename,\
-                    bce_loss=bce_loss, cell_accuracy=cell_accuracy, grid_accuracy=grid_accuracy)
-
-                run_df.to_csv(run_results_filename)
-                np.save(parameters_filename, model_parameters)
-
-                # experiment results (summmary)
-                run_filename.append(run_results_filename)
-                seed.append(my_seed)
-                exp_model_name.append(my_model_name)
-                trainable_count.append(model.count_trainable())
-                trainable_neurons.append(trainable_weights)
-                trainable_coefficients.append(trainable_activations)
-                density_0.append(density)
-                parameter_count.append(model.count_parameters())
-                model_width.append(model.width)
-                model_depth.append(model.depth)
-                exp_ca_steps.append(ca_step)
-                final_cell_accuracy.append(my_cell_accuracy)
-                final_grid_accuracy.append(my_grid_accuracy)
-                final_loss.append(loss)
-                epoch_batch_size.append(epoch_size)
-                mini_batch_size.append(minibatch_size)
-                total_samples.append((epoch+1) * epoch_size * minibatch_size)
-                model_updates.append((epoch+1) * (epoch_size // minibatch_size))
-                wall_time.append(time.time() - t00)
-                rulestring.append(ca_rule)
-
-                exp_df = make_df_from_kwargs(run_filename=run_filename,\
-                    seed=seed,\
-                    model_name=exp_model_name,\
-                    trainable_count=trainable_count,\
-                    density_0=density_0,\
-                    parameter_count=parameter_count,\
-                    model_width=model_width,\
-                    model_depth=model_depth,\
-                    exp_ca_steps=exp_ca_steps,\
-                    rulestring=rulestring,\
-                    final_cell_accuracy=final_cell_accuracy,\
-                    final_grid_accuracy=final_grid_accuracy,\
-                    epoch_size=epoch_batch_size,\
-                    batch_size=mini_batch_size,\
-                    total_samples=total_samples,\
-                    model_updates=model_updates,\
-                    wall_time=wall_time)
-
-                # concatenate if exp results file already exists
-                if os.path.exists(exp_results_filename):
-                  exp_df_0 = pd.read_csv(exp_results_filename, index_col=0)
-                  exp_df = pd.concat([exp_df_0, exp_df])
-
-                exp_df.to_csv(exp_results_filename)
 
 if __name__ == "__main__": # pragma: no cover
   parser = argparse.ArgumentParser()
@@ -405,7 +502,17 @@ if __name__ == "__main__": # pragma: no cover
   args = parser.parse_args()
   my_kwargs = dict(args._get_kwargs())
 
+  my_kwargs["git_hash"] = get_git_hash() #.decode("utf8").replace("\n","")
+
+  # store the entry point (cli call) as a string and pass to train
+  entry_point = []
+  entry_point.append(os.path.split(sys.argv[0])[1])
+  args_list = sys.argv[1:]
+
+
+  # parse the entry point as a string
+  my_kwargs["entry_point"] = get_cli_args() 
+
   train(**my_kwargs)
 
   print("OK")
-  

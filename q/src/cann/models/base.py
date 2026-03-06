@@ -1,3 +1,5 @@
+from functools import reduce
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -114,7 +116,18 @@ class ActNN(nn.Module):
 
         params = np.array([])
 
-        for param in self.parameters():
-            params = np.append(params, param.detach().numpy().ravel())
+        for param in self.named_parameters():
+            params = np.append(params, param[1].detach().numpy().ravel())
 
         return params
+
+    def set_parameters(self, my_params):
+
+        with torch.no_grad():
+          param_start = 0
+          for name, param in self.named_parameters():
+
+              param_stop = param_start + reduce(lambda x,y: x*y, param.shape)
+              param[:] = torch.nn.Parameter(torch.tensor(\
+                      my_params[param_start:param_stop].reshape(param.shape)))
+              param_start = param_stop
