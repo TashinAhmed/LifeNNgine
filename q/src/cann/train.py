@@ -14,6 +14,7 @@ import numpy as np
 
 from src.cann.models.base import ActNN
 from src.cann.models.polykan import PolyKAN, MiniPolyKAN
+from src.cann.models.act import Square, RootSquare
 
 from carle.env import CARLE
 import matplotlib.pyplot as plt
@@ -24,9 +25,13 @@ import pandas as pd
 BIG_PRIME = 7919 # a big prime number used for seeds
 ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
     celu=lambda **kwargs: nn.CELU(),\
+    silu=lambda wd: nn.SiLU(),\
     prelu=lambda wd: nn.PReLU(num_parameters=wd),\
     tanh=lambda **kwargs: nn.Tanh(),\
     sigmoid=lambda **kwargs: nn.Sigmoid(),\
+    square=lambda **kwargs: Square(),\
+    rsquare=lambda **kwargs: RootSquare(),\
+    rootsquare=lambda **kwargs: RootSquare(),\
     leakyrelu=lambda **kwargs: nn.LeakyReLU())
 
 def get_cli_args() -> str:
