@@ -4,6 +4,14 @@ import torch.nn.functional as F
 
 import numpy as np
 
+class Square(nn.Module):
+  def forward(self, x: torch.Tensor) -> torch.Tensor():
+    return torch.pow(x,2)
+
+class RootSquare(nn.Module):
+  def forward(self, x: torch.Tensor) -> torch.Tensor():
+    return torch.sqrt(torch.pow(x,2))
+
 class PolynomialActivation(nn.Module):
     """
     Learnable polynomial activation: f(x) = sum(w_i * x^i)
