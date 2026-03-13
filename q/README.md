@@ -24,6 +24,10 @@ cd ../
 
 The entry point for running experiments is `src/cann/train.py`.
 
+## Important: Network Depth and CA Steps
+
+**The network depth is automatically set to match the CA step prediction task.** When you specify `-n 3` (3-step CA prediction), the network will have depth=3. This coupling ensures the network has sufficient capacity to learn multi-step dynamics. The depth parameter corresponds to the number of (3x3 conv → activation → 1x1 conv → activation) blocks in the network.
+
 There are quite a few options when invoking an experiment:
 
 ``` 
@@ -31,6 +35,7 @@ options:
   -h, --help            show this help message and exit
   -a ACTIVATION [ACTIVATION ...], --activation ACTIVATION [ACTIVATION ...]
                         designates model, options: PolyKAN, MiniPolyKAN, ReLU, LeakyReLU, CELU, Sigmoid, Tanh,
+  --degree DEGREE       polynomial degree for PolyKAN/MiniPolyKAN activation functions. default is 2.
   -b BATCHES [BATCHES ...], --batches BATCHES [BATCHES ...]
                         batch and minibatch size. training data is generated on the fly. .
   -c DENSITIES [DENSITIES ...], --densities DENSITIES [DENSITIES ...]
@@ -43,8 +48,7 @@ options:
                         overcompleteness _m_, 3x3 neighborhood layers have 2m and 1x1 dynamics layers have m filter channels
   -n CA_STEPS [CA_STEPS ...], --ca_steps CA_STEPS [CA_STEPS ...]
                         trainin on the n-step ca prediction problem, also determines depth of network
-  -o LOSS_WEIGHTING, --loss_weighting LOSS_WEIGHTING
-                        whether to use loss weighting (weight loss assigned for off/on cells by state frequency)
+  -o, --loss_weighting  use loss weighting (weight loss assigned for off/on cells by state frequency)
   -p PSEUDORANDOM_SEED, --pseudorandom_seed PSEUDORANDOM_SEED
                         seed used as the base seed for pseudorandom number generators
   -r RUNS, --runs RUNS  number of times to run each experimental condition

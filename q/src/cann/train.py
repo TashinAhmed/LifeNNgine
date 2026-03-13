@@ -66,20 +66,48 @@ def make_df_from_kwargs(**kwargs) -> pd.DataFrame:
 
 def validate(env, model, ca_steps: int=1,\
     loss_fn: callable=F.binary_cross_entropy,\
-    val_size: int=128):
+    val_size: int=128,\
+    include_sparse: bool=True,\
+    include_patterns: bool=True):
   """
-    validate the model with
+    Validate the model with multi-density samples.
+    
+    Args:
+        env: CARLE environment
+        model: neural network model
+        ca_steps: number of CA steps to predict
+        loss_fn: loss function
+        val_size: number of random samples per density range
+        include_sparse: if True, include very sparse samples (density 0.01-0.05)
+        include_patterns: if True, include specific GoL patterns (glider, blinker, block)
+    
+    Returns:
+        loss: BCE loss on validation set
+        cell_accuracy: per-cell accuracy
+        grid_accuracy: percentage of perfectly predicted grids
   """
-
   
-  density = torch.rand(val_size,1, 1,1) * 0.8 + 0.1
+  # Standard density range (0.1 to 0.9)
+  density = torch.rand(val_size, 1, 1, 1) * 0.8 + 0.1
   x = 1.0 * (torch.rand(val_size, 1, 32, 32) > density)
 
+  # Evolved grids (5 steps of GoL dynamics)
   x2 = 1. * x
   for ii in range(5):
     x2 = env(x2)
 
-  x = torch.cat([x,x2], axis=0)
+  x = torch.cat([x, x2], axis=0)
+  
+  # Very sparse samples (density 0.01-0.05) - gliders, small patterns
+  if include_sparse:
+    sparse_density = torch.rand(val_size // 4, 1, 1, 1) * 0.04 + 0.01
+    x_sparse = 1.0 * (torch.rand(val_size // 4, 1, 32, 32) > sparse_density)
+    x = torch.cat([x, x_sparse], axis=0)
+  
+  # Specific GoL patterns for rigorous validation
+  if include_patterns:
+    x_patterns = create_gol_patterns(batch_size=16, dim=32)
+    x = torch.cat([x, x_patterns], axis=0)
 
   with torch.no_grad():
     y_target = 1. * x
@@ -95,6 +123,60 @@ def validate(env, model, ca_steps: int=1,\
     my_cell_accuracy = accuracy.mean().item()
 
   return loss.item(), my_cell_accuracy, my_grid_accuracy
+
+
+def create_gol_patterns(batch_size: int=16, dim: int=32):
+  """
+    Create specific GoL patterns for validation.
+    Includes: gliders, blinkers, blocks, beacons, and random small patterns.
+    
+    Args:
+        batch_size: total number of pattern samples to generate
+        dim: grid dimension (assumed square)
+    
+    Returns:
+        torch.Tensor of shape (batch_size, 1, dim, dim)
+  """
+  patterns = torch.zeros(batch_size, 1, dim, dim)
+  
+  # Glider pattern (appears frequently in GoL)
+  glider = torch.tensor([[0, 1, 0],
+                         [0, 0, 1],
+                         [1, 1, 1]], dtype=torch.float32)
+  
+  # Blinker (period 2 oscillator)
+  blinker = torch.tensor([[0, 1, 0],
+                          [0, 1, 0],
+                          [0, 1, 0]], dtype=torch.float32)
+  
+  # Block (still life)
+  block = torch.tensor([[1, 1],
+                        [1, 1]], dtype=torch.float32)
+  
+  # Beacon (period 2 oscillator)
+  beacon = torch.tensor([[1, 1, 0, 0],
+                         [1, 1, 0, 0],
+                         [0, 0, 1, 1],
+                         [0, 0, 1, 1]], dtype=torch.float32)
+  
+  # Toad (period 2 oscillator)
+  toad = torch.tensor([[0, 1, 1, 1],
+                       [1, 1, 1, 0]], dtype=torch.float32)
+  
+  pattern_list = [glider, blinker, block, beacon, toad]
+  
+  for i in range(batch_size):
+    # Pick a random pattern
+    pattern = pattern_list[i % len(pattern_list)]
+    ph, pw = pattern.shape
+    
+    # Random position for the pattern
+    start_h = np.random.randint(2, dim - ph - 2)
+    start_w = np.random.randint(2, dim - pw - 2)
+    
+    patterns[i, 0, start_h:start_h+ph, start_w:start_w+pw] = pattern
+  
+  return patterns
 
 def print_log(epoch, time_elapsed, save_file: str="", **kwargs):
   msg = f"epoch: {epoch}, time: {time_elapsed:.2e}"
@@ -466,6 +548,8 @@ if __name__ == "__main__": # pragma: no cover
   parser = argparse.ArgumentParser()
   parser.add_argument("-a", "--activation", type=str, nargs="+", default=["PolyKAN"],\
       help="designates model, options: PolyKAN, MiniPolyKAN, ReLU, LeakyReLU, CELU, Sigmoid, Tanh,")
+  parser.add_argument("--degree", type=int, default=2,\
+      help="polynomial degree for PolyKAN/MiniPolyKAN activation functions. default is 2.")
   parser.add_argument("-b", "--batches", type=int, nargs="+", default=[10000,8],\
       help="batch and minibatch size. training data is generated on the fly. .")
   parser.add_argument("-c", "--densities", type=float, nargs="+", default=[0.5],\
@@ -481,8 +565,9 @@ if __name__ == "__main__": # pragma: no cover
       help="overcompleteness _m_, 3x3 neighborhood layers have 2m and 1x1 dynamics layers have m filter channels")
   parser.add_argument("-n", "--ca_steps", type=int, nargs="+", default=[1],\
       help="trainin on the n-step ca prediction problem, also determines depth of network")
-  parser.add_argument("-o", "--loss_weighting", type=bool, default=False,\
+  parser.add_argument("-o", "--loss_weighting", action="store_true",\
       help="whether to use loss weighting (weight loss assigned for off/on cells by state frequency)")
+  parser.set_defaults(loss_weighting=False)
   parser.add_argument("-p", "--pseudorandom_seed", type=int,  default=17,\
       help="seed used as the base seed for pseudorandom number generators")
   parser.add_argument("-r", "--runs", type=int, default=1,\
