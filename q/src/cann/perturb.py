@@ -120,11 +120,13 @@ if __name__ == "__main__":
   
   parser = argparse.ArgumentParser()
 
-  parser.add_argument("-e", "--epoch_index", type=int, default=-1,\
-      help="epoch index to grab parameters from, e.g. 0 (first epoch, before training)"\
-      " or -1 (final epoch, default)")
+  parser.add_argument("-e", "--epochs", type=int, default=100,\
+      help="number of 'epochs' to train for.")
   parser.add_argument("-f", "--filepath", type=str, default="",\
       help="filepath to restore parameters from for perturbation experiment")
+  parser.add_argument("-i", "--epoch_index", type=int, default=-1,\
+      help="epoch index to grab parameters from, e.g. 0 (first epoch, before training)"\
+      " or -1 (final epoch, default)")
   parser.add_argument("-j", "--j_zero_perturbations", type=int, default=0,\
       help="j, the number of times to perturb parameters by zeroing out")
   parser.add_argument("-k", "--k_sign_perturbations", type=int, default=0,\
