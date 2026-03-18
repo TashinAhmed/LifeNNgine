@@ -1,0 +1,10 @@
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a SiLU -n 1 -x silu_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a CELU -n 1 -x celu_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a Sigmoid -n 1 -x sigmoid_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a Square -n 1 -x square_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a RootSquare -n 1 -x rootsquare_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a Tanh -n 1 -x tanh_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a LeakyReLU -n 1 -x leakyrelu_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a ReLU -n 1 -x relu_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a PolyKAN -n 1 -x poly_l1_1
+python -m src.cann.train -d -s -e 125000 -l 0.001 -m 1 -r 16 -b 8 8 -a PReLU -n 1 -x prelu_l1_1
