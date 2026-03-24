@@ -78,6 +78,9 @@ def perturb(**kwargs):
 
     for k_count in k_counts:
 
+      j_count = 0
+      u_magnitude = 0.
+
       for run_index in range(len(exp_df)):
 
         # only perturb/retrain runs that were originally successful.
@@ -96,8 +99,6 @@ def perturb(**kwargs):
 
           parameters = np.load(run_df["parameters_filename"][0])[epoch_index]
           parameters = k_sign_perturb(parameters, k=k_count)
-          parameters = j_zero_perturb(parameters, j=j_count)
-          parameters = uniform_perturb(parameters, magnitude=u_magnitude)
 
           experiment_name = f"perturb_{experiment_tag}_j{j_count}_k{k_count}_u{u_magnitude}_{run_number}"
           train_model(my_seed=my_seed,\
@@ -120,6 +121,8 @@ def perturb(**kwargs):
 
           run_number += 1
     for j_count in j_counts:
+      k_count = 0
+      u_magnitude = 0.
 
       for run_index in range(len(exp_df)):
 
@@ -138,9 +141,7 @@ def perturb(**kwargs):
           del run_df["Unnamed: 0"]
 
           parameters = np.load(run_df["parameters_filename"][0])[epoch_index]
-          parameters = k_sign_perturb(parameters, k=k_count)
           parameters = j_zero_perturb(parameters, j=j_count)
-          parameters = uniform_perturb(parameters, magnitude=u_magnitude)
 
           experiment_name = f"perturb_{experiment_tag}_j{j_count}_k{k_count}_u{u_magnitude}_{run_number}"
           train_model(my_seed=my_seed,\
@@ -163,6 +164,8 @@ def perturb(**kwargs):
 
           run_number += 1
     for u_magnitude in u_magnitudes:
+      k_count = 0
+      j_count = 0
 
       for run_index in range(len(exp_df)):
 
@@ -181,8 +184,6 @@ def perturb(**kwargs):
           del run_df["Unnamed: 0"]
 
           parameters = np.load(run_df["parameters_filename"][0])[epoch_index]
-          parameters = k_sign_perturb(parameters, k=k_count)
-          parameters = j_zero_perturb(parameters, j=j_count)
           parameters = uniform_perturb(parameters, magnitude=u_magnitude)
 
           experiment_name = f"perturb_{experiment_tag}_j{j_count}_k{k_count}_u{u_magnitude}_{run_number}"
