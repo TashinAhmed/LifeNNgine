@@ -14,7 +14,7 @@ import numpy as np
 
 from src.cann.models.base import ActNN
 from src.cann.models.polykan import PolyKAN, MiniPolyKAN
-from src.cann.models.act import Square, RootSquare
+from src.cann.models.act import Square, RootSquare, AdaptiveSigmoid
 
 from carle.env import CARLE
 import matplotlib.pyplot as plt
@@ -29,6 +29,8 @@ ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
     prelu=lambda wd: nn.PReLU(num_parameters=wd),\
     tanh=lambda **kwargs: nn.Tanh(),\
     sigmoid=lambda **kwargs: nn.Sigmoid(),\
+    asigmoid=lambda wd: AdaptiveSigmoid(channels=wd),\
+    adaptivesigmoid=lambda wd: AdaptiveSigmoid(channels=wd),\
     square=lambda **kwargs: Square(),\
     rsquare=lambda **kwargs: RootSquare(),\
     rootsquare=lambda **kwargs: RootSquare(),\

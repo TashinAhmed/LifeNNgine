@@ -12,6 +12,21 @@ class RootSquare(nn.Module):
   def forward(self, x: torch.Tensor) -> torch.Tensor():
     return torch.sqrt(torch.pow(x,2))
 
+class AdaptiveSigmoid(nn.Module):
+
+  def __init__(self, channels=1):
+    super().__init__()
+
+    
+    # a_sigmoid(x) = a * (1-exp(-b*x))/(1+exp(-b*x))
+    self.a = nn.Parameter(1.0 + 1e-3 * torch.randn(1, channels,1,1))
+    self.b = nn.Parameter(1.0 + 1e-3 * torch.randn(1, channels,1,1))
+
+  def forward(self, x):
+    out = self.a * (1 - torch.exp(-self.b*x)) / (1 + torch.exp(-self.b*x))
+        
+    return out
+
 class PolynomialActivation(nn.Module):
     """
     Learnable polynomial activation: f(x) = sum(w_i * x^i)
