@@ -101,6 +101,8 @@ def perturb(**kwargs):
           parameters = k_sign_perturb(parameters, k=k_count)
 
           experiment_name = f"perturb_{experiment_tag}_j{j_count}_k{k_count}_u{u_magnitude}_{run_number}"
+          experiment_name += "from_initial" if epoch_index == 0 else "from_final"
+
           train_model(my_seed=my_seed,\
               experiment_name=experiment_name,\
               run_number=run_number,\
@@ -144,6 +146,8 @@ def perturb(**kwargs):
           parameters = j_zero_perturb(parameters, j=j_count)
 
           experiment_name = f"perturb_{experiment_tag}_j{j_count}_k{k_count}_u{u_magnitude}_{run_number}"
+          experiment_name += "from_initial" if epoch_index == 0 else "from_final"
+
           train_model(my_seed=my_seed,\
               experiment_name=experiment_name,\
               run_number=run_number,\
@@ -164,6 +168,7 @@ def perturb(**kwargs):
 
           run_number += 1
     for u_magnitude in u_magnitudes:
+
       k_count = 0
       j_count = 0
 
@@ -187,6 +192,8 @@ def perturb(**kwargs):
           parameters = uniform_perturb(parameters, magnitude=u_magnitude)
 
           experiment_name = f"perturb_{experiment_tag}_j{j_count}_k{k_count}_u{u_magnitude}_{run_number}"
+          experiment_name += "from_initial" if epoch_index == 0 else "from_final"
+
           train_model(my_seed=my_seed,\
               experiment_name=experiment_name,\
               run_number=run_number,\
