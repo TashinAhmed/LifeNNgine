@@ -18,7 +18,7 @@ FILEPATH = Path(__file__)
 
 ROOT_DIR = os.path.split(os.path.split(os.path.split(FILEPATH)[0])[0])[0]
 
-def get_params_losses(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+def get_params_losses_accuracies(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
   params = None
   for filename in df["run_filename"]:
     df_run = pd.read_csv(os.path.join(ROOT_DIR, filename))
@@ -28,13 +28,21 @@ def get_params_losses(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     if params is None:
       params = np.load(param_filepath)
       losses = df_run["bce_loss"]
+      accuracies = df_run["grid_accuracy"]
+      ends = 0 * losses
+      ends[0] = -1
+      ends[ends.shape[-1]-1] = 1
     else:
       loaded_params = np.load(param_filepath)
       params = np.append(params, loaded_params, axis=0)
       losses = np.append(losses, df_run["bce_loss"], axis=0)
+      accuracies = np.append(accuracies, df_run["grid_accuracy"], axis=0)
+      temp_ends = 0 * df_run["bce_loss"]
+      temp_ends[0] = -1
+      temp_ends[temp_ends.shape[-1]-1] = 1
+      ends = np.append(ends, temp_ends, axis=0)
 
-
-  return params, losses
+  return params, losses, accuracies, ends
 
 def fit_pca(params:np.ndarray, number_components: int=10) -> PCA:
 
@@ -65,14 +73,26 @@ def plot_param_trajectory(df_filename: str,\
   figs, axes = [], []
   for width, depth in zip(df["model_width"].unique(), df["model_depth"].unique()):
 
-    params, losses = get_params_losses(df[df["model_width"] == width][df["model_depth"] == depth])
+    params, losses, accuracies, ends = get_params_losses_accuracies(df[df["model_width"] == width][df["model_depth"] == depth])
 
     pcs = fit_return_principal_components(params) 
 
     fig, ax = plt.subplots(1,1, figsize=(8,8))
 
     my_color = my_cmap(losses)
-    ax.scatter(pcs[:,pc_indices[0]], pcs[:,pc_indices[1]], color=my_color, alpha=0.125, s=2)
+
+    ax.scatter(pcs[:,pc_indices[0]], pcs[:,pc_indices[1]], marker="o",\
+        color=my_color, alpha=0.025, s=32)
+
+    #edge_colors = ["r" if acc < 1.0 else "k" for acc in accuracies]
+    print(ends.shape, accuracies.shape, my_color.shape, pcs.shape)
+    for ii in range(ends.shape[0]):
+      if ends[ii] == 1:
+        my_marker = "X" if accuracies[ii] < 1.0 else "o"
+        ax.scatter(pcs[ii,pc_indices[0]], pcs[ii,pc_indices[1]], marker=my_marker,\
+            color=my_color[ii], alpha=0.75, s=256)
+
+
     ax.set_title(ax_title)
 
     figs.append(fig)
