@@ -25,8 +25,12 @@ import pandas as pd
 BIG_PRIME = 7919 # a big prime number used for seeds
 ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
     celu=lambda **kwargs: nn.CELU(),\
+    gelu=lambda **kwargs: nn.GELU(),\
+    selu=lambda **kwargs: nn.SELU(),\
     silu=lambda wd: nn.SiLU(),\
+    mish=lambda wd: nn.Mish(),\
     prelu=lambda wd: nn.PReLU(num_parameters=wd),\
+    negprelu=lambda wd: nn.PReLU(num_parameters=wd, init=-0.25),\
     tanh=lambda **kwargs: nn.Tanh(),\
     sigmoid=lambda **kwargs: nn.Sigmoid(),\
     asigmoid=lambda wd: AdaptiveSigmoid(channels=wd),\
@@ -34,6 +38,7 @@ ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
     square=lambda **kwargs: Square(),\
     rsquare=lambda **kwargs: RootSquare(),\
     rootsquare=lambda **kwargs: RootSquare(),\
+    extraleakyrelu=lambda **kwargs: nn.LeakyReLU(negative_slope=0.25),\
     leakyrelu=lambda **kwargs: nn.LeakyReLU())
 
 def get_cli_args(entry_point: list, args_list: list) -> str:
