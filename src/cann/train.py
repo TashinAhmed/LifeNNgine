@@ -20,7 +20,6 @@ from carle.env import CARLE
 import matplotlib.pyplot as plt
 
 import pandas as pd
-#import duckdb
 
 BIG_PRIME = 7919 # a big prime number used for seeds
 ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
