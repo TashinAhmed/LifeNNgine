@@ -60,15 +60,25 @@ def fit_return_principal_components(params: np.ndarray,\
   return pcs  
 
   
-def plot_param_trajectory(df_filename: str,\
+def plot_param_trajectory(df_filename: list[str],\
     ax_title: str="",\
     my_cmap: ListedColormap=plt.get_cmap("plasma"),\
+    only_success: bool=False,\
     pc_indices: list=[0,1]) -> [Figure, Axes]:
 
-  try:
-    df = pd.read_csv(os.path.join(ROOT_DIR, df_filename))
-  except:
-    df = pd.read_csv(df_filename)
+  if type(df_filename) == str:
+    df_filename = [df_filename]
+
+  df = pd.DataFrame()
+  for df_fn in df_filename:
+    try:
+      dfa = pd.read_csv(os.path.join(ROOT_DIR, df_fn))
+    except:
+      dfa = pd.read_csv(df_fn)
+    df = pd.concat([df,dfa])
+
+  if only_success:
+    df = df[df["final_grid_accuracy"]==1.0]
 
   figs, axes = [], []
   for width, depth in zip(df["model_width"].unique(), df["model_depth"].unique()):
