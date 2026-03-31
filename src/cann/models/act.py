@@ -5,19 +5,34 @@ import torch.nn.functional as F
 import numpy as np
 
 class Square(nn.Module):
-  def forward(self, x: torch.Tensor) -> torch.Tensor():
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
     return torch.pow(x,2)
 
 class RootSquare(nn.Module):
-  def forward(self, x: torch.Tensor) -> torch.Tensor():
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
     return torch.sqrt(torch.pow(x,2))
+
+class Gaussian(nn.Module):
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    return torch.exp(-x**2/(2))
+
+class AGaussian(nn.Module):
+  def __init__(self, channels=1):
+    super().__init__()
+
+    #self.a = nn.Parameter(1.0 + 1e-3 * torch.randn(1, channels,1,1))
+    self.b = nn.Parameter(0.0 + 1e-3 * torch.randn(1, channels,1,1))
+    self.c = nn.Parameter(1.0 + 1e-3 * torch.randn(1, channels,1,1))
+
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    #return self.a * torch.exp(-(x-self.b)**2/(2*self.c**2))
+    return torch.exp(-(x-self.b)**2/(2*self.c**2))
 
 class AdaptiveSigmoid(nn.Module):
 
   def __init__(self, channels=1):
     super().__init__()
 
-    
     # a_sigmoid(x) = a * (1-exp(-b*x))/(1+exp(-b*x))
     self.a = nn.Parameter(1.0 + 1e-3 * torch.randn(1, channels,1,1))
     self.b = nn.Parameter(1.0 + 1e-3 * torch.randn(1, channels,1,1))

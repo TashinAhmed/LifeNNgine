@@ -14,7 +14,11 @@ import numpy as np
 
 from src.cann.models.base import ActNN
 from src.cann.models.polykan import PolyKAN, MiniPolyKAN
-from src.cann.models.act import Square, RootSquare, AdaptiveSigmoid
+from src.cann.models.act import Square,\
+    RootSquare,\
+    AdaptiveSigmoid,\
+    AGaussian,\
+    Gaussian
 
 from carle.env import CARLE
 import matplotlib.pyplot as plt
@@ -26,19 +30,23 @@ ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
     celu=lambda **kwargs: nn.CELU(),\
     gelu=lambda **kwargs: nn.GELU(),\
     selu=lambda **kwargs: nn.SELU(),\
-    silu=lambda wd: nn.SiLU(),\
-    mish=lambda wd: nn.Mish(),\
-    prelu=lambda wd: nn.PReLU(num_parameters=wd),\
-    negprelu=lambda wd: nn.PReLU(num_parameters=wd, init=-0.25),\
+    silu=lambda **kwargs: nn.SiLU(),\
+    mish=lambda **kwargs: nn.Mish(),\
     tanh=lambda **kwargs: nn.Tanh(),\
     sigmoid=lambda **kwargs: nn.Sigmoid(),\
-    asigmoid=lambda wd: AdaptiveSigmoid(channels=wd),\
-    adaptivesigmoid=lambda wd: AdaptiveSigmoid(channels=wd),\
+    softplus=lambda **kwargs: nn.Softplus(),\
+    softsign=lambda **kwargs: nn.Softsign(),\
+    gaussian=lambda **kwargs: Gaussian(),\
+    agaussian=lambda **kwargs: AGaussian(),\
     square=lambda **kwargs: Square(),\
     rsquare=lambda **kwargs: RootSquare(),\
     rootsquare=lambda **kwargs: RootSquare(),\
     extraleakyrelu=lambda **kwargs: nn.LeakyReLU(negative_slope=0.25),\
-    leakyrelu=lambda **kwargs: nn.LeakyReLU())
+    leakyrelu=lambda **kwargs: nn.LeakyReLU(),\
+    prelu=lambda wd: nn.PReLU(num_parameters=wd),\
+    negprelu=lambda wd: nn.PReLU(num_parameters=wd, init=-0.25),\
+    asigmoid=lambda wd: AdaptiveSigmoid(channels=wd),\
+    adaptivesigmoid=lambda wd: AdaptiveSigmoid(channels=wd))
 
 def get_cli_args(entry_point: list, args_list: list) -> str:
   
