@@ -28,6 +28,7 @@ import pandas as pd
 BIG_PRIME = 7919 # a big prime number used for seeds
 ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
     celu=lambda **kwargs: nn.CELU(),\
+    elu=lambda **kwargs: nn.ELU(),\
     gelu=lambda **kwargs: nn.GELU(),\
     selu=lambda **kwargs: nn.SELU(),\
     silu=lambda **kwargs: nn.SiLU(),\
