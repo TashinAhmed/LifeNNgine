@@ -66,7 +66,7 @@ def fit_pca(params:np.ndarray, number_components: int=10) -> PCA:
 def fit_return_principal_components(params: np.ndarray,\
     number_components: int=10) -> np.ndarray:
 
-  pca = fit_principalpca(params, number_components)
+  pca = fit_pca(params, number_components)
   pcs = pca.transform(params)
   
   return pcs  
