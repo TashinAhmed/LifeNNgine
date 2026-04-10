@@ -14,27 +14,42 @@ import numpy as np
 
 from src.cann.models.base import ActNN
 from src.cann.models.polykan import PolyKAN, MiniPolyKAN
-from src.cann.models.act import Square, RootSquare
+from src.cann.models.act import Square,\
+    RootSquare,\
+    AdaptiveSigmoid,\
+    AGaussian,\
+    Gaussian
 
 from carle.env import CARLE
 import matplotlib.pyplot as plt
 
 import pandas as pd
-#import duckdb
 
 BIG_PRIME = 7919 # a big prime number used for seeds
 ACT_DICT = dict(relu=lambda **kwargs: nn.ReLU(), \
     celu=lambda **kwargs: nn.CELU(),\
-    silu=lambda wd: nn.SiLU(),\
-    prelu=lambda wd: nn.PReLU(num_parameters=wd),\
+    elu=lambda **kwargs: nn.ELU(),\
+    gelu=lambda **kwargs: nn.GELU(),\
+    selu=lambda **kwargs: nn.SELU(),\
+    silu=lambda **kwargs: nn.SiLU(),\
+    mish=lambda **kwargs: nn.Mish(),\
     tanh=lambda **kwargs: nn.Tanh(),\
     sigmoid=lambda **kwargs: nn.Sigmoid(),\
+    softplus=lambda **kwargs: nn.Softplus(),\
+    softsign=lambda **kwargs: nn.Softsign(),\
+    gaussian=lambda **kwargs: Gaussian(),\
+    agaussian=lambda **kwargs: AGaussian(),\
     square=lambda **kwargs: Square(),\
     rsquare=lambda **kwargs: RootSquare(),\
     rootsquare=lambda **kwargs: RootSquare(),\
-    leakyrelu=lambda **kwargs: nn.LeakyReLU())
+    extraleakyrelu=lambda **kwargs: nn.LeakyReLU(negative_slope=0.25),\
+    leakyrelu=lambda **kwargs: nn.LeakyReLU(),\
+    prelu=lambda wd: nn.PReLU(num_parameters=wd),\
+    negprelu=lambda wd: nn.PReLU(num_parameters=wd, init=-0.25),\
+    asigmoid=lambda wd: AdaptiveSigmoid(channels=wd),\
+    adaptivesigmoid=lambda wd: AdaptiveSigmoid(channels=wd))
 
-def get_cli_args() -> str:
+def get_cli_args(entry_point: list, args_list: list) -> str:
   
   sorted_args = []
   for arg_index in range(0, len(args_list)):
@@ -278,6 +293,7 @@ def train_model(my_seed: int=1337,\
   git_hashs = []
   entry_points = []
 
+  solved = 0
   seed_all(my_seed)
   env = CARLE()
   env.rules_from_string(ca_rule)
@@ -322,6 +338,7 @@ def train_model(my_seed: int=1337,\
   print_log(-1, 0.0, run_number=run_number, seed=my_seed,\
       git_hash=git_hash,\
       entry_point=entry_point,\
+      experiment_name=experiment_name,\
       model_name=my_model_name, \
       ca_rule=ca_rule,\
       number_ca_steps=ca_step,\
@@ -599,9 +616,8 @@ if __name__ == "__main__": # pragma: no cover
   entry_point.append(os.path.split(sys.argv[0])[1])
   args_list = sys.argv[1:]
 
-
   # parse the entry point as a string
-  my_kwargs["entry_point"] = get_cli_args() 
+  my_kwargs["entry_point"] = get_cli_args(entry_point, args_list)
 
   train(**my_kwargs)
 
