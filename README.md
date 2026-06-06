@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="assets/lifenngine.png" alt="LifeNNgine" width="250" height="250">
+</p>
+
+
 # Getting started
 
 using `virtualenv` and pip (for now)
@@ -19,7 +24,6 @@ pip install -e .
 cd ../
 ```
 
-
 # Entry point for experiments
 
 The entry point for running experiments is `src/cann/train.py`.
@@ -30,7 +34,7 @@ The entry point for running experiments is `src/cann/train.py`.
 
 There are quite a few options when invoking an experiment:
 
-``` 
+```
 options:
   -h, --help            show this help message and exit
   -a ACTIVATION [ACTIVATION ...], --activation ACTIVATION [ACTIVATION ...]
@@ -126,29 +130,28 @@ python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -a PReLU -w
 
 # n-step prediction
 
-L(n,1) with steps n=[1,2,3,4,5] PolyKAN 
+L(n,1) with steps n=[1,2,3,4,5] PolyKAN
 
 ```
 python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.38 -a PolyKAN -n 1 2 3 4 5 -x n12345_polykan_l1_1
 ```
 
-L(n,1) with steps n=[1,2,3,4,5] ReLU 
+L(n,1) with steps n=[1,2,3,4,5] ReLU
 
 ```
 python src/cann/train.py -d -s -e 125000 -l 0.001 -m 1 -r 128 -b 8 8 -c 0.38 -a ReLU -n 1 2 3 4 5 -x n12345_relu_l1_1
 ```
 
-L(n,2) with steps n=[1,2,3,4,5] PolyKAN 
+L(n,2) with steps n=[1,2,3,4,5] PolyKAN
 
 ```
 python src/cann/train.py -d -s -e 125000 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.38 -a PolyKAN -n 1 2 3 4 5 -x n12345_polykan_l1_1
 ```
 
-L(n,2) with steps n=[1,2,3,4,5] ReLU 
+L(n,2) with steps n=[1,2,3,4,5] ReLU
 
 ```
 python src/cann/train.py -d -s -e 125000 -l 0.001 -m 2 -r 128 -b 8 8 -c 0.38 -a ReLU -n 1 2 3 4 5 -x n12345_relu_l1_1
 ```
 
 ^^ same pattern for L(n,4), L(n,8), L(n,16), L(n,32)
-
