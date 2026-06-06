@@ -123,9 +123,9 @@ LifeNNgine/
 
 Models are described by the notation **L(m, n)**:
 
-| Parameter                            | Meaning                                                                                                                                    |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **m** (width/overcompleteness) | Number of filter channels. 3×3 neighbourhood layers use `2m` channels; 1×1 dynamics layers use `m` channels.                         |
+| Parameter                            | Meaning                                                                                                                                  |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **m** (width/overcompleteness) | Number of filter channels. 3×3 neighbourhood layers use `2m` channels; 1×1 dynamics layers use `m` channels.                       |
 | **n** (depth/CA steps)         | Number of repeated_(3×3 conv → activation → 1×1 conv → activation)_ blocks. Automatically set to match the CA step prediction task. |
 
 - **L(1,1)** — the minimal model: one block, one channel. Few enough parameters to enumerate the full parameter space.
@@ -154,7 +154,7 @@ python src/cann/train.py [OPTIONS]
 
 | Flag         | Argument             | Default         | Description                                                                            |
 | ------------ | -------------------- | --------------- | -------------------------------------------------------------------------------------- |
-| `-a`       | `ACTIVATION [...]` | `PolyKAN`     | Activation function(s). See [Available Activations](#available-activations).             |
+| `-a`       | `ACTIVATION [...]` | `PolyKAN`     | Activation function(s). See[Available Activations](#available-activations).               |
 | `--degree` | `INT`              | `2`           | Polynomial degree for PolyKAN/MiniPolyKAN.                                             |
 | `-b`       | `BATCH MINIBATCH`  | `10000 8`     | Epoch batch size and minibatch size.                                                   |
 | `-c`       | `DENSITY [...]`    | `0.5`         | Initial cell density. Pass a single value, or `min max step` for a range.            |
@@ -300,5 +300,3 @@ The `notebooks/` directory contains Jupyter notebooks for analysing and visualis
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
-Copyright © 2026 Tashin Ahmed & Q. Tyrell Davis
