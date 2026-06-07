@@ -177,7 +177,6 @@ def plot_traj_proj_on_axes(ax_main: Axes, ax_projv: Axes, ax_projh: Axes, \
         
       ax_projv.scatter(loss_list[ii], pcs[ii,pc_indices[1]], marker=my_marker,\
           color=my_color[ii], alpha=0.75, s=small_marker_size*my_scale*2)
-        
       ax_projh.scatter(pcs[ii,pc_indices[0]], losses[ii], marker=my_marker,\
           color=my_color[ii], alpha=0.75, s=small_marker_size*my_scale*2)
 
@@ -197,6 +196,11 @@ def plot_traj_proj_on_axes(ax_main: Axes, ax_projv: Axes, ax_projh: Axes, \
   ax_projh.set_xlabel(f"Principal Component {pc_indices[0]}", fontsize=fontsize)
   ax_main.set_ylabel(f"Principal Component {pc_indices[1]}", fontsize=fontsize)
   ax_projv.set_xlabel(f"Loss", fontsize=fontsize)
+  projv_xticks = ax_projv.get_xticks()
+  projv_xticklabels = ax_projv.get_xticklabels()
+  ax_projv.set_xticks([projv_xticks[0], projv_xticks[-1]])
+  ax_projv.set_xticklabels([projv_xticklabels[0], projv_xticklabels[-1]]) #, rotation=90)
+
   ax_projh.set_ylabel(f"Loss", fontsize=fontsize)
   ax_main.set_xticklabels("")
   ax_projv.yaxis.tick_right()
