@@ -29,6 +29,7 @@ export class LifeModel {
   }
 
   _build() {
+    this._opt = null;
     const rng = mulberry32(this.seed);
     this._rng = rng;
     const m = this.width;
@@ -231,6 +232,25 @@ export class LifeModel {
       }
       // (no d_input needed: input is data)
       dA = null;
+    }
+  }
+
+  step(lr = 1e-3, t = 1, beta1 = 0.9, beta2 = 0.999, eps = 1e-8) {
+    if (!this._opt) {
+      this._opt = this._trainable.map((e) => ({ m: new Float32Array(e.array.length), v: new Float32Array(e.array.length) }));
+    }
+    const b1 = beta1, b2 = beta2;
+    const bc1 = 1 - Math.pow(b1, t);
+    const bc2 = 1 - Math.pow(b2, t);
+    for (let i = 0; i < this._trainable.length; i++) {
+      const { array, grad } = this._trainable[i];
+      const o = this._opt[i];
+      for (let j = 0; j < array.length; j++) {
+        const g = grad[j];
+        o.m[j] = b1 * o.m[j] + (1 - b1) * g;
+        o.v[j] = b2 * o.v[j] + (1 - b2) * g * g;
+        array[j] -= lr * (o.m[j] / bc1) / (Math.sqrt(o.v[j] / bc2) + eps);
+      }
     }
   }
 
