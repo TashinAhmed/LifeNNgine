@@ -53,9 +53,11 @@ export class LifeModel {
       freezeConv(this.outputConv);
     }
     if (!this.trainableActivations) {
+      // base.py freezes activations via requires_grad=False but KEEPS their
+      // initialized values (does NOT zero them). The optimizer excludes
+      // non-trainable activations, and accumulateGrad early-returns when
+      // !trainable, so simply flipping the flag is the faithful freeze.
       for (const b of this.blocks) {
-        for (const p of b.act0.params) p.fill(0); // frozen activations keep coeffs (will not update)
-        for (const p of b.act1.params) p.fill(0);
         b.act0.trainable = false;
         b.act1.trainable = false;
       }
@@ -128,6 +130,124 @@ export class LifeModel {
     cache.logit = logit;
     cache.finalIn = cur;
     this._cache = cache;
+    return out;
+  }
+
+  zeroGrad() {
+    const clear = (c) => { c.gW.fill(0); c.gb.fill(0); };
+    for (const b of this.blocks) { clear(b.conv3); clear(b.conv1); b.act0.zeroGrad(); b.act1.zeroGrad(); }
+    clear(this.outputConv);
+  }
+
+  // BCE loss against a 0/1 target, returns mean loss; sets this.lossValue.
+  computeLoss(pred, target) {
+    let s = 0;
+    const n = pred.length;
+    for (let i = 0; i < n; i++) {
+      const p = Math.min(Math.max(pred[i], 1e-7), 1 - 1e-7);
+      s += -(target[i] * Math.log(p) + (1 - target[i]) * Math.log(1 - p));
+    }
+    this.lossValue = s / n;
+    return this.lossValue;
+  }
+
+  // Backprop assuming forward(input) just ran. target: Float32Array (0/1).
+  backward(target) {
+    const { H, W, _cache: cache } = this;
+    const pred = new Float32Array(H * W);
+    for (let i = 0; i < H * W; i++) pred[i] = 1 / (1 + Math.exp(-cache.logit[0][i]));
+    this.computeLoss(pred, target);
+
+    // dL/dlogit = pred - target (sigmoid + BCE combined)
+    const dLogit0 = new Float32Array(H * W);
+    for (let i = 0; i < H * W; i++) dLogit0[i] = (pred[i] - target[i]) / (H * W);
+
+    // output conv (1->1): grad + d_a1
+    const oc = this.outputConv;
+    const a1last = cache.finalIn[0];
+    for (let i = 0; i < H * W; i++) {
+      oc.gW[0] += dLogit0[i] * a1last[i];
+      oc.gb[0] += dLogit0[i];
+    }
+    let dA = [new Float32Array(H * W)]; // d/d a1 (1 channel)
+    for (let i = 0; i < H * W; i++) dA[0][i] = dLogit0[i] * oc.W[0];
+
+    // walk blocks in reverse
+    for (let bi = this.blocks.length - 1; bi >= 0; bi--) {
+      const b = this.blocks[bi];
+      const c = cache.blocks[bi];
+      // a1 = act1(z1); d_z1 = dA * slope ; accumulate act1 param grads
+      const dz1 = new Float32Array(H * W);
+      for (let i = 0; i < H * W; i++) {
+        dz1[i] = dA[0][i] * b.act1.slope(c.z1[0][i], 0);
+        b.act1.accumulateGrad(dA[0][i], c.z1[0][i], 0);
+      }
+      // conv1 (2m->1): gradW, gradb, d_a0
+      const conv1 = b.conv1;
+      const dA0 = [];
+      for (let ch = 0; ch < conv1.inCh; ch++) dA0.push(new Float32Array(H * W));
+      for (let i = 0; i < H * W; i++) {
+        conv1.gb[0] += dz1[i];
+        for (let ic = 0; ic < conv1.inCh; ic++) {
+          conv1.gW[ic] += dz1[i] * c.a0[ic][i];
+          dA0[ic][i] = dz1[i] * conv1.W[ic];
+        }
+      }
+      // a0 = act0(z0); d_z0 per channel
+      const channels = b.act0.channels;
+      const dz0 = [];
+      for (let ch = 0; ch < channels; ch++) {
+        const arr = new Float32Array(H * W);
+        for (let i = 0; i < H * W; i++) {
+          arr[i] = dA0[ch][i] * b.act0.slope(c.z0[ch][i], ch);
+          b.act0.accumulateGrad(dA0[ch][i], c.z0[ch][i], ch);
+        }
+        dz0.push(arr);
+      }
+      // conv3 (1->2m, 3x3 circular): gradW, gradb.
+      // Use the per-block conv3 input (c.blockInput[0]) so the backward is
+      // correct for any depth, not just depth=1.
+      const conv3 = b.conv3;
+      const inCh = c.blockInput[0];
+      for (let oc2 = 0; oc2 < conv3.outCh; oc2++) {
+        for (let i = 0; i < H * W; i++) conv3.gb[oc2] += dz0[oc2][i];
+        let wi = oc2 * conv3.inCh * 9;
+        for (let ic = 0; ic < conv3.inCh; ic++) {
+          for (let kh = 0; kh < 3; kh++) {
+            for (let kw = 0; kw < 3; kw++) {
+              let g = 0;
+              for (let h = 0; h < H; h++) {
+                const hh = (h + kh - 1 + H) % H;
+                for (let w = 0; w < W; w++) {
+                  const ww = (w + kw - 1 + W) % W;
+                  g += dz0[oc2][h * W + w] * inCh[hh * W + ww];
+                }
+              }
+              conv3.gW[wi] += g;
+              wi++;
+            }
+          }
+        }
+      }
+      // (no d_input needed: input is data)
+      dA = null;
+    }
+  }
+
+  // Flat list of {array, grad, name} over ALL params (trainable + frozen), for gradcheck.
+  paramEntries() {
+    const out = [];
+    for (let bi = 0; bi < this.blocks.length; bi++) {
+      const b = this.blocks[bi];
+      out.push({ array: b.conv3.W, grad: b.conv3.gW, name: `b${bi}.conv3.W` });
+      out.push({ array: b.conv3.b, grad: b.conv3.gb, name: `b${bi}.conv3.b` });
+      for (let i = 0; i < b.act0.params.length; i++) out.push({ array: b.act0.params[i], grad: b.act0.grads[i], name: `b${bi}.act0.p${i}` });
+      out.push({ array: b.conv1.W, grad: b.conv1.gW, name: `b${bi}.conv1.W` });
+      out.push({ array: b.conv1.b, grad: b.conv1.gb, name: `b${bi}.conv1.b` });
+      for (let i = 0; i < b.act1.params.length; i++) out.push({ array: b.act1.params[i], grad: b.act1.grads[i], name: `b${bi}.act1.p${i}` });
+    }
+    out.push({ array: this.outputConv.W, grad: this.outputConv.gW, name: "out.W" });
+    out.push({ array: this.outputConv.b, grad: this.outputConv.gb, name: "out.b" });
     return out;
   }
 }
