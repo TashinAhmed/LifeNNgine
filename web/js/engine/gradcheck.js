@@ -1,6 +1,5 @@
 // Finite-difference gradient check: compares analytic backward() grads to
 // central differences of the BCE loss. Pure, DOM-free.
-import { mulberry32 } from "./rng.js";
 
 export function gradcheckModel(model, input, target, eps = 1e-3) {
   const { H, W } = model;

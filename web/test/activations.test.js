@@ -3,9 +3,8 @@ import assert from "node:assert/strict";
 import { Activation } from "../js/engine/activations.js";
 import { mulberry32 } from "../js/engine/rng.js";
 
-const rng = mulberry32(42);
-
 test("relu is parameterless and correct", () => {
+  const rng = mulberry32(42);
   const a = new Activation("relu", 3, { rng });
   assert.equal(a.trainable, false);
   assert.equal(a.params.length, 0);
@@ -16,12 +15,14 @@ test("relu is parameterless and correct", () => {
 });
 
 test("square is parameterless and correct", () => {
+  const rng = mulberry32(42);
   const a = new Activation("square", 1, { rng });
   assert.equal(a.value(3, 0), 9);
   assert.equal(a.slope(3, 0), 6);
 });
 
 test("silu value/slope match finite differences", () => {
+  const rng = mulberry32(42);
   const a = new Activation("silu", 1, { rng });
   const x = 0.7;
   const sig = 1 / (1 + Math.exp(-x));
@@ -33,6 +34,7 @@ test("silu value/slope match finite differences", () => {
 });
 
 test("prelu has one param per channel, slope uses a for x<=0", () => {
+  const rng = mulberry32(42);
   const a = new Activation("prelu", 2, { rng });
   assert.equal(a.trainable, true);
   assert.equal(a.params[0].length, 2); // 2 channels
@@ -44,6 +46,7 @@ test("prelu has one param per channel, slope uses a for x<=0", () => {
 });
 
 test("polyKAN value/slope match coefficients", () => {
+  const rng = mulberry32(42);
   const a = new Activation("polyKAN", 1, { degree: 2, rng });
   // params[0] = [w0,w1,w2] per channel
   const [w0, w1, w2] = a.params[0];
@@ -53,6 +56,7 @@ test("polyKAN value/slope match coefficients", () => {
 });
 
 test("polyKAN accumulateGrad produces consistent parameter grads", () => {
+  const rng = mulberry32(42);
   const a = new Activation("polyKAN", 1, { degree: 2, rng });
   a.zeroGrad();
   const x = 0.9;
@@ -65,6 +69,7 @@ test("polyKAN accumulateGrad produces consistent parameter grads", () => {
 });
 
 test("prelu accumulateGrad only accrues on the x<=0 branch", () => {
+  const rng = mulberry32(42);
   const a = new Activation("prelu", 1, { rng });
   a.zeroGrad();
   a.accumulateGrad(1.0, 2.0, 0); // x>0 -> da/da_param = 0

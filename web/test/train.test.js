@@ -19,11 +19,10 @@ import { mulberry32 } from "../js/engine/rng.js";
 //     engine's gradcheck and Adam-loss-reduction tests pass independently.
 //  2. `steps = 12000` (raised from the brief's 4000). polyKAN on a 16x16 grid at
 //     density 0.4 has a sharp convergence cliff at ~11000 steps; at 12000 it
-//     scores a perfect 1.0 averaged over 40 independent validation batches
-//     (genuine convergence, not single-batch luck). The brief's suggested 8000
-//     is insufficient (~0.79 there). ReLU stalls at ~0.67 throughout (>=0.95
-//     would require an entirely different architecture). Density 0.4 (brief
-//     default) gives the cleanest separation and is retained.
+//     scores >=0.999 on a single fresh validation batch. The brief's suggested
+//     8000 is insufficient (~0.79 there). ReLU stalls at ~0.67 throughout
+//     (>=0.95 would require an entirely different architecture). Density 0.4
+//     (brief default) gives the cleanest separation and is retained.
 
 // Grid accuracy at decision boundary 0.5 (matches repo validation).
 function gridAccuracy(pred, target) {

@@ -32,6 +32,7 @@ export class Activation {
       }
       case "polyKAN": {
         this.trainable = true;
+        if (this.degree !== 2) throw new RangeError("polyKAN activation currently supports only degree=2");
         // coeffs per channel: [w0, w1, ..., wD], shape (channels, degree+1)
         const p = new Float32Array(this.channels * (this.degree + 1));
         for (let c = 0; c < this.channels; c++) {

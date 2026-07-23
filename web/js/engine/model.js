@@ -105,8 +105,7 @@ export class LifeModel {
   forward(input) {
     const { H, W } = this;
     if (!H || !W) throw new Error("Call resize(H,W) before forward");
-    const m = this.width;
-    const cache = { input, blocks: [] };
+    const cache = { blocks: [] };
 
     // current representation: channels as array of Float32Array(H*W)
     let cur = [Float32Array.from(input)]; // 1 channel
@@ -154,6 +153,7 @@ export class LifeModel {
 
   // Backprop assuming forward(input) just ran. target: Float32Array (0/1).
   backward(target) {
+    if (this.depth !== 1) throw new Error("backward currently supports only depth=1 (single-step prediction)");
     const { H, W, _cache: cache } = this;
     const pred = new Float32Array(H * W);
     for (let i = 0; i < H * W; i++) pred[i] = 1 / (1 + Math.exp(-cache.logit[0][i]));
@@ -261,10 +261,10 @@ export class LifeModel {
       const b = this.blocks[bi];
       out.push({ array: b.conv3.W, grad: b.conv3.gW, name: `b${bi}.conv3.W` });
       out.push({ array: b.conv3.b, grad: b.conv3.gb, name: `b${bi}.conv3.b` });
-      for (let i = 0; i < b.act0.params.length; i++) out.push({ array: b.act0.params[i], grad: b.act0.grads[i], name: `b${bi}.act0.p${i}` });
+      if (b.act0.trainable) for (let i = 0; i < b.act0.params.length; i++) out.push({ array: b.act0.params[i], grad: b.act0.grads[i], name: `b${bi}.act0.p${i}` });
       out.push({ array: b.conv1.W, grad: b.conv1.gW, name: `b${bi}.conv1.W` });
       out.push({ array: b.conv1.b, grad: b.conv1.gb, name: `b${bi}.conv1.b` });
-      for (let i = 0; i < b.act1.params.length; i++) out.push({ array: b.act1.params[i], grad: b.act1.grads[i], name: `b${bi}.act1.p${i}` });
+      if (b.act1.trainable) for (let i = 0; i < b.act1.params.length; i++) out.push({ array: b.act1.params[i], grad: b.act1.grads[i], name: `b${bi}.act1.p${i}` });
     }
     out.push({ array: this.outputConv.W, grad: this.outputConv.gW, name: "out.W" });
     out.push({ array: this.outputConv.b, grad: this.outputConv.gb, name: "out.b" });
