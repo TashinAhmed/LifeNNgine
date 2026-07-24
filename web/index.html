@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LifeNNgine — Learning Game of Life with the Right Activation Function</title>
+  <meta name="description" content="An interactive scrollytelling companion to LifeNNgine: how tiny polynomial Kolmogorov-Arnold networks learn Conway's Game of Life where ReLU stalls.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="page">
+
+    <!-- Chapter 0 — Hero -->
+    <section class="chapter hero">
+      <canvas id="hero-bg" aria-hidden="true"></canvas>
+      <h1 class="hero__title">LifeNNgine</h1>
+      <p class="hero__subtitle">It&rsquo;s Much Easier for Neural Networks to Learn Game of Life Dynamics with the Right Activation Function</p>
+      <p class="hero__meta">
+        Tashin Ahmed &amp; Q. Tyrell Davis &middot; ALIFE 2026
+      </p>
+      <div class="hero__links">
+        <a href="https://arxiv.org/abs/2606.23587" target="_blank" rel="noopener">Paper (arXiv)</a>
+        <a href="https://github.com/TashinAhmed/LifeNNgine" target="_blank" rel="noopener">Code (GitHub)</a>
+      </div>
+    </section>
+
+    <!-- Chapter 1 — The Pocket Universe -->
+    <section class="chapter" id="ch-pocket-universe">
+      <h2 class="chapter__title">The Pocket Universe</h2>
+      <p class="chapter__lead">Conway&rsquo;s Game of Life is a tiny universe of cells that live or die by a few simple rules &mdash; a piece of toy physics simple enough to hold in your head, yet rich enough to be universally powerful.</p>
+      <p>Each cell looks at its eight neighbors. A dead cell springs to life with exactly three live neighbors; a live cell survives with two or three. That&rsquo;s it. Paint your own patterns below and watch them evolve.</p>
+      <div class="canvas-card">
+        <canvas id="life-grid" width="640" height="640"></canvas>
+      </div>
+      <div class="controls" id="life-controls"></div>
+      <p class="caption">Widget A &mdash; an interactive, toroidal Game of Life grid. Step, play, randomize, or stamp classic patterns.</p>
+    </section>
+
+    <div class="grid-motif" aria-hidden="true"></div>
+
+    <!-- Chapter 2 — The rule, as a function -->
+    <section class="chapter" id="ch-rule-function">
+      <h2 class="chapter__title">The rule, as a function</h2>
+      <p class="chapter__lead">Strip away the grid and Life&rsquo;s update becomes a function of a single number: the live-neighbor count N. The network&rsquo;s entire job is to learn this shape.</p>
+      <p>For N&thinsp;=&thinsp;2 or 3 the next state can be alive; everywhere else it cannot. That makes the rule a non-monotonic bump &mdash; exactly the kind of shape a monotonic function like ReLU fits poorly, but a small polynomial fits naturally.</p>
+      <div class="canvas-card">
+        <canvas id="rule-function" width="720" height="360"></canvas>
+      </div>
+      <p class="caption">Widget B &mdash; the B3/S23 rule as a function of neighbor count. Ghost curves hint at why monotonic (ReLU) and linear-quadratic fits behave so differently.</p>
+    </section>
+
+    <div class="grid-motif" aria-hidden="true"></div>
+
+    <!-- Chapter 3 — Why it's hard -->
+    <section class="chapter" id="ch-why-hard">
+      <h2 class="chapter__title">Why it&rsquo;s hard (ReLU &amp; lottery tickets)</h2>
+      <p class="chapter__lead">If the rule is so simple, why do standard networks struggle? The answer is the shape of the function &mdash; and the inductive bias of the activation.</p>
+      <p>ReLU and its relatives are monotonic: once they turn on, they only keep going. The Life rule turns <em>off</em> again after N&thinsp;=&thinsp;3. To represent that with ReLU, a network needs enough width to &ldquo;fold&rdquo; the curve back down &mdash; and finding a working configuration by gradient descent is like finding a winning lottery ticket.</p>
+      <p>The result: minimal ReLU networks rarely learn the rule from scratch; they need more parameters or a lucky initialization. A non-monotonic activation sidesteps the problem entirely, because the bump is already in its vocabulary.</p>
+    </section>
+
+    <div class="grid-motif" aria-hidden="true"></div>
+
+    <!-- Chapter 4 — The centerpiece (arena placeholder) -->
+    <section class="chapter" id="ch-watch-it-learn">
+      <h2 class="chapter__title">Watch it learn, live</h2>
+      <p class="chapter__lead">The headline result, demonstrated in your browser: a real PolyKAN network learns the Life update rule by gradient descent, side-by-side with a ReLU network that stalls.</p>
+      <div id="arena-mount">
+        <p class="placeholder">The live training arena arrives in the next update.</p>
+      </div>
+    </section>
+
+    <div class="grid-motif" aria-hidden="true"></div>
+
+    <!-- Chapter 5 — Activation-function zoo -->
+    <section class="chapter" id="ch-activation-zoo">
+      <h2 class="chapter__title">The activation-function zoo</h2>
+      <p class="chapter__lead">Different activations have different geometries &mdash; and geometry decides which rules a network can learn. Explore the zoo, then sculpt a PolyKAN polynomial by hand.</p>
+      <div class="canvas-card">
+        <canvas id="activation-zoo" width="720" height="360"></canvas>
+      </div>
+      <div class="controls" id="poly-controls"></div>
+      <p class="caption">Widget C &mdash; toggle activations on the left; on the right, drive f(x)&thinsp;=&thinsp;w&#8320;&thinsp;+&thinsp;w&#8321;x&thinsp;+&thinsp;w&#8322;x&sup2; against the ghosted rule shape. The readout reports whether your curve is monotonic.</p>
+      <div class="canvas-card">
+        <canvas id="viz-success" width="720" height="380"></canvas>
+      </div>
+      <p class="caption">Viz 1 &mdash; success rate by activation across 128 training runs.</p>
+      <p class="data-source">Source: Table 2.</p>
+    </section>
+
+    <div class="grid-motif" aria-hidden="true"></div>
+
+    <!-- Chapter 6 — Robustness & results -->
+    <section class="chapter" id="ch-results">
+      <h2 class="chapter__title">Robustness &amp; results</h2>
+      <p class="chapter__lead">PolyKAN is not just accurate &mdash; it is robust. It learns the rule across initial densities, survives ablation of its weight training, and converges to a diverse, well-behaved region of parameter space.</p>
+      <div class="canvas-card">
+        <canvas id="viz-density" width="720" height="340"></canvas>
+        <p class="caption">Viz 2 &mdash; success rate vs initial on-density.</p>
+        <p class="data-source">Source: Fig 4 (approx.).</p>
+      </div>
+      <div class="canvas-card">
+        <canvas id="viz-ablation" width="720" height="340"></canvas>
+        <p class="caption">Viz 3 &mdash; ablation: full / activations-only / weights-only training.</p>
+        <p class="data-source">Source: Fig 6 / Table 2.</p>
+      </div>
+      <div class="canvas-card">
+        <canvas id="viz-pca" width="720" height="420"></canvas>
+        <p class="caption">Viz 4 &mdash; parameter-space PCA of training trajectories. Illustrative reproduction &mdash; exact points not extractable from Fig 1.</p>
+        <p class="data-source">Source: Fig 1 (illustrative).</p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <h2 class="chapter__title" style="font-size:1.3rem;">Citation</h2>
+      <p>Tashin Ahmed &amp; Q. Tyrell Davis. &ldquo;It&rsquo;s Much Easier for Neural Networks to Learn Game of Life Dynamics with the Right Activation Function: Polynomial Kolmogorov-Arnold Networks.&rdquo; ALIFE 2026. <a href="https://arxiv.org/abs/2606.23587">arXiv:2606.23587</a>.</p>
+<pre>@inproceedings{ahmed2026lifenngine,
+  title     = {It's Much Easier for Neural Networks to Learn Game of Life
+               Dynamics with the Right Activation Function:
+               Polynomial Kolmogorov-Arnold Networks},
+  author    = {Ahmed, Tashin and Davis, Q. Tyrell},
+  booktitle = {Proceedings of the Artificial Life Conference (ALIFE) 2026},
+  year      = {2026},
+  eprint    = {2606.23587},
+  archivePrefix = {arXiv}
+}</pre>
+      <p class="footer__note">Source code: <a href="https://github.com/TashinAhmed/LifeNNgine">github.com/TashinAhmed/LifeNNgine</a>. Licensed under CC BY 4.0.</p>
+    </footer>
+
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
