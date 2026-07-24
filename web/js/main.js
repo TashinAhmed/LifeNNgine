@@ -4,6 +4,8 @@ import { fitCanvas, clearCanvas, drawGrid } from "./util/canvas.js";
 import { createLifeGrid } from "./widgets/life-grid.js";
 import { createRuleFunction } from "./widgets/rule-function.js";
 import { createActivationPlot } from "./widgets/activation-plot.js";
+import { renderSuccessBars, renderDensitySweep } from "./charts/charts.js";
+import { SUCCESS_RATES, DENSITY_SWEEP } from "./data/results.js";
 
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -43,5 +45,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const polyControls = document.getElementById("poly-controls");
   if (zooCanvas || polyCanvas) {
     window.__activationPlot = createActivationPlot(zooCanvas, polyCanvas, polyControls);
+  }
+
+  const vizSuccess = document.getElementById("viz-success");
+  if (vizSuccess) {
+    window.__vizSuccess = renderSuccessBars(vizSuccess, SUCCESS_RATES);
+  }
+
+  const vizDensity = document.getElementById("viz-density");
+  if (vizDensity) {
+    window.__vizDensity = renderDensitySweep(vizDensity, DENSITY_SWEEP);
   }
 });

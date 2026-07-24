@@ -52,3 +52,24 @@ test("results data module exports the four datasets", async () => {
   assert.ok(m.PCA_ILLUSTRATIVE.polyKAN && m.PCA_ILLUSTRATIVE.relu);
   assert.ok(m.PCA_ILLUSTRATIVE.prelu && m.PCA_ILLUSTRATIVE.sigmoid);
 });
+
+test("charts module imports without DOM access and linearScale maps endpoints", async () => {
+  const m = await import("../js/charts/charts.js");
+  assert.equal(typeof m.linearScale, "function");
+  assert.equal(typeof m.chartFrame, "function");
+  assert.equal(typeof m.renderSuccessBars, "function");
+  assert.equal(typeof m.renderDensitySweep, "function");
+  // domain endpoints map to range endpoints
+  const sx = m.linearScale([0, 1], [0, 100]);
+  assert.equal(sx(0), 0);
+  assert.equal(sx(1), 100);
+  assert.equal(sx(0.5), 50);
+  // inverted range (screen-y) maps correctly
+  const sy = m.linearScale([0, 1], [100, 0]);
+  assert.equal(sy(0), 100);
+  assert.equal(sy(1), 0);
+  // degenerate domain collapses to the range midpoint (no NaN)
+  const sc = m.linearScale([3, 3], [10, 20]);
+  assert.equal(sc(3), 15);
+  assert.equal(sc(99), 15);
+});
