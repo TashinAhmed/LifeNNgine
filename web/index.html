@@ -8,10 +8,20 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <nav class="chapter-nav" aria-label="Chapter navigation">
+    <a href="#ch-hero">Intro</a>
+    <a href="#ch-pocket-universe">Universe</a>
+    <a href="#ch-rule-function">The rule</a>
+    <a href="#ch-why-hard">Why hard</a>
+    <a href="#ch-watch-it-learn">Live</a>
+    <a href="#ch-activation-zoo">Zoo</a>
+    <a href="#ch-results">Results</a>
+  </nav>
+
   <main class="page">
 
     <!-- Chapter 0 — Hero -->
-    <section class="chapter hero">
+    <section class="chapter hero" id="ch-hero">
       <canvas id="hero-bg" aria-hidden="true"></canvas>
       <h1 class="hero__title">LifeNNgine</h1>
       <p class="hero__subtitle">It&rsquo;s Much Easier for Neural Networks to Learn Game of Life Dynamics with the Right Activation Function</p>
@@ -130,6 +140,7 @@
     </footer>
 
   </main>
+  <a class="back-to-top" href="#ch-hero" aria-label="Back to top" title="Back to top">&uarr;</a>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

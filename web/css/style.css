@@ -85,6 +85,7 @@ code {
 .chapter {
   padding: 64px 0;
   border-top: 1px solid var(--border);
+  scroll-margin-top: 56px;
 }
 
 .chapter:first-of-type {
@@ -175,6 +176,8 @@ code {
 
 .canvas-card canvas {
   width: 100%;
+  height: auto;
+  max-height: 75vh;
   background: var(--bg);
 }
 
@@ -294,6 +297,84 @@ input[type="range"]::-moz-range-thumb {
   font-size: 0.8rem;
 }
 
+/* ---------- Sticky chapter nav ---------- */
+.chapter-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px max(20px, calc((100vw - var(--page-max)) / 2));
+  background: rgba(11, 13, 16, 0.85);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.chapter-nav a {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.chapter-nav a:hover {
+  background: var(--card);
+  color: var(--accent-green);
+  text-decoration: none;
+}
+
+.chapter-nav a:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
+/* ---------- Back to top ---------- */
+.back-to-top {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--accent-green);
+  font-size: 1.1rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s, border-color 0.15s;
+  pointer-events: none;
+}
+
+.back-to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.back-to-top:hover {
+  border-color: var(--accent-green);
+  text-decoration: none;
+}
+
+.back-to-top:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 720px) {
   body {
@@ -313,6 +394,26 @@ input[type="range"]::-moz-range-thumb {
     margin: 14px 0;
   }
 
+  /* Keep individual canvases from dominating a small viewport. */
+  .canvas-card canvas {
+    max-height: 60vh;
+  }
+
+  .chapter-nav {
+    flex-wrap: nowrap;
+    padding: 6px 12px;
+  }
+
+  .chapter-nav a {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+
+  .back-to-top {
+    right: 12px;
+    bottom: 12px;
+  }
+
   .hero {
     padding: 64px 0 40px;
   }
@@ -322,5 +423,9 @@ input[type="range"]::-moz-range-thumb {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .back-to-top {
+    transition: none;
   }
 }
