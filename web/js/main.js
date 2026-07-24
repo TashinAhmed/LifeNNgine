@@ -3,6 +3,7 @@ import { mulberry32 } from "./engine/rng.js";
 import { fitCanvas, clearCanvas, drawGrid } from "./util/canvas.js";
 import { createLifeGrid } from "./widgets/life-grid.js";
 import { createRuleFunction } from "./widgets/rule-function.js";
+import { createActivationPlot } from "./widgets/activation-plot.js";
 
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -35,5 +36,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const ruleCanvas = document.getElementById("rule-function");
   if (ruleCanvas) {
     window.__ruleFunction = createRuleFunction(ruleCanvas);
+  }
+
+  const zooCanvas = document.getElementById("activation-zoo");
+  const polyCanvas = document.getElementById("activation-poly");
+  const polyControls = document.getElementById("poly-controls");
+  if (zooCanvas || polyCanvas) {
+    window.__activationPlot = createActivationPlot(zooCanvas, polyCanvas, polyControls);
   }
 });

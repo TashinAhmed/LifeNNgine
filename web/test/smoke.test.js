@@ -26,6 +26,22 @@ test("rule-function module imports without DOM access", async () => {
   assert.equal(typeof m.createRuleFunction, "function");
 });
 
+test("activation-plot module imports without DOM access", async () => {
+  const m = await import("../js/widgets/activation-plot.js");
+  assert.equal(typeof m.polyValue, "function");
+  assert.equal(typeof m.isMonotonicOver, "function");
+  assert.equal(typeof m.createActivationPlot, "function");
+  // six standard activations, each with a pure fn
+  assert.ok(Array.isArray(m.ACTIVATIONS) && m.ACTIVATIONS.length === 6);
+  const keys = new Set(m.ACTIVATIONS.map((a) => a.key));
+  for (const k of ["relu", "prelu", "silu", "sigmoid", "tanh", "square"]) {
+    assert.ok(keys.has(k), `missing activation ${k}`);
+  }
+  // pure helpers behave without any DOM
+  assert.equal(m.polyValue([1, 2, 3], 2), 17);
+  assert.equal(m.isMonotonicOver([0, 0, 1], -2, 2), false);
+});
+
 test("results data module exports the four datasets", async () => {
   const m = await import("../js/data/results.js");
   assert.ok(Array.isArray(m.SUCCESS_RATES) && m.SUCCESS_RATES.length === 10);
