@@ -4,8 +4,8 @@ import { fitCanvas, clearCanvas, drawGrid } from "./util/canvas.js";
 import { createLifeGrid } from "./widgets/life-grid.js";
 import { createRuleFunction } from "./widgets/rule-function.js";
 import { createActivationPlot } from "./widgets/activation-plot.js";
-import { renderSuccessBars, renderDensitySweep } from "./charts/charts.js";
-import { SUCCESS_RATES, DENSITY_SWEEP } from "./data/results.js";
+import { renderSuccessBars, renderDensitySweep, renderAblation, renderPCA } from "./charts/charts.js";
+import { SUCCESS_RATES, DENSITY_SWEEP, ABLATION, PCA_ILLUSTRATIVE } from "./data/results.js";
 
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -55,5 +55,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const vizDensity = document.getElementById("viz-density");
   if (vizDensity) {
     window.__vizDensity = renderDensitySweep(vizDensity, DENSITY_SWEEP);
+  }
+
+  const vizAblation = document.getElementById("viz-ablation");
+  if (vizAblation) {
+    window.__vizAblation = renderAblation(vizAblation, ABLATION);
+  }
+
+  const vizPca = document.getElementById("viz-pca");
+  if (vizPca) {
+    window.__vizPca = renderPCA(vizPca, PCA_ILLUSTRATIVE);
   }
 });

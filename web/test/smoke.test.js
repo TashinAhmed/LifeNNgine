@@ -59,6 +59,8 @@ test("charts module imports without DOM access and linearScale maps endpoints", 
   assert.equal(typeof m.chartFrame, "function");
   assert.equal(typeof m.renderSuccessBars, "function");
   assert.equal(typeof m.renderDensitySweep, "function");
+  assert.equal(typeof m.renderAblation, "function");
+  assert.equal(typeof m.renderPCA, "function");
   // domain endpoints map to range endpoints
   const sx = m.linearScale([0, 1], [0, 100]);
   assert.equal(sx(0), 0);

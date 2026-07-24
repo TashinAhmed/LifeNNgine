@@ -36,6 +36,7 @@ const COLORS = {
   relu: "#ffb454",
   prelu: "#22d3ee",
   silu: "#e879f9",
+  sigmoid: "#f472b6",
   muted: "#6b7280",
   tooltipBg: "rgba(11,13,16,0.92)",
 };
@@ -56,6 +57,36 @@ const DENSITY_SERIES = [
   { key: "silu",    label: "SiLU",    color: COLORS.silu },
   { key: "relu",    label: "ReLU",    color: COLORS.relu },
 ];
+
+// Viz 3 ablation: 2 model families × 3 training conditions. Green family for
+// PolyKAN, cyan family for PReLU (per spec).
+const ABLATION_CONDITIONS = [
+  { key: "full",       label: "full" },
+  { key: "actOnly",    label: "activations only" },
+  { key: "weightOnly", label: "weights only" },
+];
+const ABLATION_SERIES = [
+  { key: "polyKAN", label: "PolyKAN", color: COLORS.polyKAN },
+  { key: "prelu",   label: "PReLU",   color: COLORS.prelu },
+];
+
+// Viz 4 PCA: selectable activations. Button order is fixed for the selector.
+const PCA_ACTIVATIONS = [
+  { key: "polyKAN", label: "PolyKAN", color: COLORS.polyKAN },
+  { key: "relu",    label: "ReLU",    color: COLORS.relu },
+  { key: "prelu",   label: "PReLU",   color: COLORS.prelu },
+  { key: "sigmoid", label: "Sigmoid", color: COLORS.sigmoid },
+];
+
+// Map a loss in [0,1] to a color along a light-orange -> dark-purple ramp,
+// echoing the paper's Fig 1 parameter-space coloring (low loss = light).
+function lossColor(loss) {
+  const t = Math.max(0, Math.min(1, loss));
+  const r = Math.round(255 + (59 - 255) * t);
+  const g = Math.round(209 + (7 - 209) * t);
+  const b = Math.round(160 + (100 - 160) * t);
+  return `rgb(${r},${g},${b})`;
+}
 
 // Round tick values inside [lo,hi] on a 0.2 grid.
 function niceXTicks(lo, hi) {
@@ -390,4 +421,324 @@ export function renderDensitySweep(canvas, data) {
   }
   draw();
   return { redraw: draw };
+}
+
+// ---- Viz 3: ablation grouped bars (PolyKAN vs PReLU across 3 conditions). ----
+// DOM controller. All canvas/window access lives inside this function. Renders
+// two bars per condition, annotates each bar's trainable-param count, draws a
+// fixed headline callout, and supports hover tooltips. Returns { redraw }.
+export function renderAblation(canvas, data) {
+  if (!canvas || typeof canvas.getContext !== "function") return null;
+  const doc = canvas.ownerDocument || (typeof document !== "undefined" ? document : null);
+  if (!doc) return null;
+  const win = doc.defaultView || (typeof window !== "undefined" ? window : null);
+
+  const ablation = data && typeof data === "object" ? data : {};
+  let hover = -1;  // index into bars; -1 when nothing hovered
+  let bars = [];    // populated by draw(): { x, y, w, h, color, rate, params, condLabel, seriesLabel }
+
+  function draw() {
+    const view = fitCanvas(canvas);
+    if (!view || !view.ctx) return;
+    const { ctx, cssW, cssH } = view;
+
+    const pad = { l: 48, r: 20, t: 56, b: 64 };
+    const { plotW, plotH, pad: P, yScale } = chartFrame(ctx, cssW, cssH, {
+      pad,
+      yDomain: [0, 1],
+      yTicks: [0, 0.25, 0.5, 0.75, 1],
+      yLabel: "success rate",
+    });
+
+    // Headline callout (top center).
+    ctx.font = "bold 13px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillStyle = COLORS.polyKAN;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("PolyKAN: 128/128 with or without weight training", P.l + plotW / 2, 14);
+
+    // Legend (top-left, below the callout).
+    ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textBaseline = "middle";
+    let lx = P.l + 2;
+    const ly = P.t - 20;
+    for (const s of ABLATION_SERIES) {
+      ctx.fillStyle = s.color;
+      ctx.fillRect(lx, ly + 4, 14, 10);
+      ctx.fillStyle = COLORS.text;
+      ctx.textAlign = "left";
+      ctx.fillText(s.label, lx + 18, ly + 9);
+      lx += 18 + ctx.measureText(s.label).width + 20;
+    }
+
+    const nG = ABLATION_CONDITIONS.length;
+    const groupW = plotW / nG;
+    const innerPad = 0.16;
+    const barAreaW = groupW * (1 - 2 * innerPad);
+    const slotW = barAreaW / ABLATION_SERIES.length;
+    const barW = slotW * 0.82;
+    const baselineY = yScale(0);
+
+    bars = [];
+    for (let gi = 0; gi < nG; gi++) {
+      const cond = ABLATION_CONDITIONS[gi];
+      const groupCx = P.l + groupW * (gi + 0.5);
+
+      for (let si = 0; si < ABLATION_SERIES.length; si++) {
+        const s = ABLATION_SERIES[si];
+        const cell = ablation[s.key] && ablation[s.key][cond.key];
+        if (!cell) continue;
+        const rate = Math.max(0, Math.min(1, cell.rate));
+        const bx = groupCx - barAreaW / 2 + slotW * si + (slotW - barW) / 2;
+        const bh = Math.max(0, baselineY - yScale(rate));
+        const by = yScale(rate);
+        const barIndex = gi * ABLATION_SERIES.length + si; // matches bars.push order
+        const isHover = hover === barIndex;
+
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = isHover ? 1 : 0.9;
+        ctx.fillRect(bx, by, barW, bh);
+        ctx.globalAlpha = 1;
+
+        // Rate above the bar.
+        ctx.fillStyle = COLORS.text;
+        ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(rate.toFixed(2), bx + barW / 2, by - 3);
+
+        // Param count under the bar (within the group row).
+        ctx.fillStyle = COLORS.label;
+        ctx.textBaseline = "top";
+        ctx.fillText(`${cell.params}p`, bx + barW / 2, P.t + plotH + 22);
+
+        bars.push({
+          x: bx, y: by, w: barW, h: bh, color: s.color,
+          rate, params: cell.params, condLabel: cond.label, seriesLabel: s.label,
+        });
+      }
+
+      // Condition label (group title).
+      ctx.fillStyle = COLORS.text;
+      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(cond.label, groupCx, P.t + plotH + 42);
+    }
+
+    // Hover tooltip.
+    if (hover >= 0 && hover < bars.length) {
+      const b = bars[hover];
+      const lines = [
+        `${b.seriesLabel} · ${b.condLabel}`,
+        `rate: ${b.rate.toFixed(2)}`,
+        `params: ${b.params}`,
+      ];
+      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
+      let tw = 0;
+      for (const ln of lines) tw = Math.max(tw, ctx.measureText(ln).width);
+      const bw = tw + 16;
+      const bh = lines.length * 16 + 12;
+      let bx = b.x + b.w + 8;
+      if (bx + bw > cssW - 4) bx = Math.max(4, b.x - bw - 8);
+      let by = b.y - 4;
+      if (by + bh > cssH - 4) by = cssH - bh - 4;
+      if (by < 4) by = 4;
+      ctx.fillStyle = COLORS.tooltipBg;
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillStyle = i === 0 ? b.color : COLORS.text;
+        ctx.fillText(lines[i], bx + 8, by + 7 + i * 16);
+      }
+    }
+  }
+
+  function onMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    let next = -1;
+    for (let i = 0; i < bars.length; i++) {
+      const b = bars[i];
+      if (mx >= b.x - 2 && mx <= b.x + b.w + 2 && my >= b.y - 2 && my <= b.y + b.h + 2) {
+        next = i; break;
+      }
+    }
+    canvas.style.cursor = next >= 0 ? "pointer" : "default";
+    if (next !== hover) { hover = next; draw(); }
+  }
+  function onLeave() {
+    canvas.style.cursor = "default";
+    if (hover !== -1) { hover = -1; draw(); }
+  }
+
+  if (!BOUND.has(canvas)) {
+    BOUND.add(canvas);
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("mouseleave", onLeave);
+    if (win) win.addEventListener("resize", draw);
+  }
+  draw();
+  return { redraw: draw };
+}
+
+// ---- Viz 4: illustrative PCA scatter with an activation selector. ----
+// DOM controller. All canvas/window access lives inside this function. The
+// selector is a button row drawn on the canvas itself (single-bind); points are
+// colored by loss along a light-orange -> dark-purple ramp, with circle markers
+// for successful runs and x markers for failures. Returns { redraw, setActivation }.
+export function renderPCA(canvas, data) {
+  if (!canvas || typeof canvas.getContext !== "function") return null;
+  const doc = canvas.ownerDocument || (typeof document !== "undefined" ? document : null);
+  if (!doc) return null;
+  const win = doc.defaultView || (typeof window !== "undefined" ? window : null);
+
+  const pca = data && typeof data === "object" ? data : {};
+  let active = "polyKAN";
+  let buttons = []; // populated by draw(): { x, y, w, h, key }
+
+  function pointsFor(key) {
+    return Array.isArray(pca[key]) ? pca[key] : [];
+  }
+
+  function draw() {
+    const view = fitCanvas(canvas);
+    if (!view || !view.ctx) return;
+    const { ctx, cssW, cssH } = view;
+
+    // Symmetric domain with headroom so the ~1.08 polyKAN cloud fits while the
+    // grid stays on clean integer/half-integer ticks (honest coordinate mapping).
+    const pts = pointsFor(active);
+    let maxAbs = 1;
+    for (const p of pts) {
+      maxAbs = Math.max(maxAbs, Math.abs(p.pc1), Math.abs(p.pc2));
+    }
+    const M = Math.max(1.2, maxAbs * 1.1);
+    const ticks = [-1, -0.5, 0, 0.5, 1]; // all within [-M, M] since M >= 1.2
+
+    const pad = { l: 44, r: 16, t: 44, b: 40 };
+    const { plotW, plotH, pad: P, xScale, yScale } = chartFrame(ctx, cssW, cssH, {
+      pad,
+      xDomain: [-M, M],
+      xTicks: ticks,
+      yDomain: [-M, M],
+      yTicks: ticks,
+      xLabel: "PC1",
+      yLabel: "PC2",
+    });
+
+    // Faint origin cross for PCA convention.
+    ctx.strokeStyle = COLORS.axis;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xScale(0), P.t); ctx.lineTo(xScale(0), P.t + plotH);
+    ctx.moveTo(P.l, yScale(0)); ctx.lineTo(P.l + plotW, yScale(0));
+    ctx.stroke();
+
+    // Scatter (clipped to plot area).
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(P.l, P.t, plotW, plotH);
+    ctx.clip();
+    for (const p of pts) {
+      const X = xScale(p.pc1);
+      const Y = yScale(p.pc2);
+      const fill = lossColor(p.loss);
+      if (p.success) {
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.arc(X, Y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.45)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = fill;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(X - 4, Y - 4); ctx.lineTo(X + 4, Y + 4);
+        ctx.moveTo(X + 4, Y - 4); ctx.lineTo(X - 4, Y + 4);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    // Loss color-scale legend (top-left of plot).
+    const lgW = 90, lgH = 8;
+    const lgX = P.l + 6, lgY = P.t - 22;
+    for (let i = 0; i < lgW; i++) {
+      ctx.fillStyle = lossColor(i / (lgW - 1));
+      ctx.fillRect(lgX + i, lgY, 1, lgH);
+    }
+    ctx.strokeStyle = COLORS.axis;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(lgX + 0.5, lgY + 0.5, lgW - 1, lgH - 1);
+    ctx.fillStyle = COLORS.label;
+    ctx.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("low loss", lgX, lgY - 2);
+    ctx.textAlign = "right";
+    ctx.fillText("high loss", lgX + lgW, lgY - 2);
+
+    // Activation selector (button row, top-right of plot).
+    buttons = [];
+    ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textBaseline = "middle";
+    let bx = P.l + plotW + 4;
+    for (let i = PCA_ACTIVATIONS.length - 1; i >= 0; i--) {
+      const a = PCA_ACTIVATIONS[i];
+      const lw = ctx.measureText(a.label).width;
+      const w = lw + 18;
+      const x = bx - w;
+      const y = P.t - 24;
+      const on = a.key === active;
+      if (on) {
+        ctx.fillStyle = a.color;
+        ctx.fillRect(x, y, w, 18);
+        ctx.fillStyle = COLORS.bg;
+      } else {
+        ctx.strokeStyle = a.color;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, w - 1, 17);
+        ctx.fillStyle = a.color;
+      }
+      ctx.textAlign = "center";
+      ctx.fillText(a.label, x + w / 2, y + 9);
+      buttons.push({ x, y, w, h: 18, key: a.key });
+      bx = x - 6;
+    }
+  }
+
+  function pickButton(mx, my) {
+    for (const b of buttons) {
+      if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) return b.key;
+    }
+    return null;
+  }
+
+  function onMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    const key = pickButton(e.clientX - rect.left, e.clientY - rect.top);
+    canvas.style.cursor = key ? "pointer" : "default";
+  }
+  function onClick(e) {
+    const rect = canvas.getBoundingClientRect();
+    const key = pickButton(e.clientX - rect.left, e.clientY - rect.top);
+    if (key && key !== active) { active = key; draw(); }
+  }
+
+  if (!BOUND.has(canvas)) {
+    BOUND.add(canvas);
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("click", onClick);
+    if (win) win.addEventListener("resize", draw);
+  }
+  draw();
+  return { redraw: draw, setActivation(k) { if (pca[k]) { active = k; draw(); } } };
 }
