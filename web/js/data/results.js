@@ -5,7 +5,7 @@ export const SUCCESS_RATES = [
   { name: "PReLU",     rate: 0.97, params: 28, monotonic: true,  differentiable: false },
   { name: "Square",    rate: 0.94, params: 25, monotonic: false, differentiable: true },
   { name: "SiLU",      rate: 0.94, params: 25, monotonic: false, differentiable: true },
-  { name: "RootSquare",rate: 0.50, params: 25, monotonic: true,  differentiable: false },
+  { name: "RootSquare",rate: 0.50, params: 25, monotonic: false, differentiable: false },
   { name: "LeakyReLU", rate: 0.25, params: 25, monotonic: true,  differentiable: false },
   { name: "CELU",      rate: 0.06, params: 25, monotonic: true,  differentiable: true },
   { name: "Sigmoid",   rate: 0.0,  params: 25, monotonic: true,  differentiable: true },

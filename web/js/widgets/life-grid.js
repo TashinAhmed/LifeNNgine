@@ -88,6 +88,17 @@ export function createLifeGrid(canvas, controlsEl, opts = {}) {
     raf = requestAnimationFrame(loop);
   }
 
+  // RAF lifecycle mirrors the hero pattern: cancel on pause (so the loop stops
+  // reallocating the canvas bitmap every frame), restart on resume.
+  function stop() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+  }
+  function start() {
+    if (raf || paused) return;
+    raf = requestAnimationFrame(loop);
+  }
+
   function randomize() {
     for (let i = 0; i < grid.length; i++) grid[i] = Math.random() < density ? 1 : 0;
     flash.fill(0);
@@ -162,11 +173,17 @@ export function createLifeGrid(canvas, controlsEl, opts = {}) {
 
   controlsEl.append(stepBtn, playBtn, randBtn, densityLabel, densityInput, clearBtn, ...presetBtns);
 
-  raf = requestAnimationFrame(loop);
+  start();
 
   return {
-    // Visibility pause hook for a later IntersectionObserver.
-    setPaused(p) { paused = !!p; },
+    // Visibility pause hook for a later IntersectionObserver. Cancels the RAF
+    // (then renders once so the static frame stays correct) and restarts it on
+    // resume; the running/Play toggle is untouched, so Play keeps working.
+    setPaused(p) {
+      paused = !!p;
+      if (paused) { stop(); render(); }
+      else start();
+    },
     // Clear the grid and stop playback.
     reset() { running = false; playBtn.textContent = "Play"; clearGrid(); },
     // Advance one generation (exposed for external triggering / testing).

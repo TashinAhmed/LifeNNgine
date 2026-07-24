@@ -17,6 +17,7 @@ test("success rates match Table 2", () => {
   assert.equal(byName.Square.params, 25);
   assert.equal(byName.SiLU.rate, 0.94);
   assert.equal(byName.RootSquare.rate, 0.50);
+  assert.equal(byName.RootSquare.monotonic, false);
   assert.equal(byName.LeakyReLU.rate, 0.25);
   assert.equal(byName.CELU.rate, 0.06);
   assert.equal(byName.Sigmoid.rate, 0.0);

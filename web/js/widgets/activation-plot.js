@@ -6,6 +6,7 @@
 //     lives inside it, never at module top level.
 
 import { fitCanvas, clearCanvas } from "../util/canvas.js";
+import { RULE_POINTS } from "./rule-function.js";
 
 // ---- Pure helpers (no DOM) ----
 
@@ -193,9 +194,10 @@ export function createActivationPlot(zooCanvas, polyCanvas, controlsEl) {
     ctx.rect(PAD.l, PAD.t, plotW, plotH);
     ctx.clip();
 
-    // ghost: B3/S23 rule bump (green). target=1 at N∈{2,3} else 0; each integer
-    // N owns bin [N-0.5, N+0.5) so verticals form the bump automatically.
-    const target = (n) => (n === 2 || n === 3 ? 1 : 0);
+    // ghost: B3/S23 rule bump (green). Each integer N owns bin [N-0.5, N+0.5)
+    // so verticals form the bump automatically; target derived from the shared
+    // RULE_POINTS so this widget can't drift from Widget B.
+    const target = (n) => RULE_POINTS[n]?.target ?? 0;
     ctx.strokeStyle = COLORS.rule;
     ctx.globalAlpha = 0.45;
     ctx.lineWidth = 3;
