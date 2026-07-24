@@ -8,6 +8,14 @@ test("canvas util imports without DOM access", async () => {
   assert.equal(typeof m.easeInOut, "function");
 });
 
+test("arena module imports without DOM access", async () => {
+  const m = await import("../js/arena.js");
+  assert.equal(typeof m.makeBatch, "function");
+  assert.equal(typeof m.gridAccuracy, "function");
+  assert.equal(typeof m.trainStep, "function");
+  assert.equal(typeof m.createArena, "function");
+});
+
 test("life-grid module imports without DOM access", async () => {
   const m = await import("../js/widgets/life-grid.js");
   assert.ok(m.PRESETS && m.PRESETS.glider && m.PRESETS.pulsar);
