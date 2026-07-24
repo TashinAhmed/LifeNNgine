@@ -15,6 +15,17 @@ test("life-grid module imports without DOM access", async () => {
   assert.equal(typeof m.createLifeGrid, "function");
 });
 
+test("rule-function module imports without DOM access", async () => {
+  const m = await import("../js/widgets/rule-function.js");
+  assert.ok(Array.isArray(m.RULE_POINTS));
+  assert.equal(m.RULE_POINTS.length, 9);
+  // target = 1 only at N=2,3; 0 elsewhere (B3/S23 combined envelope)
+  for (const { n, target } of m.RULE_POINTS) {
+    assert.equal(target, (n === 2 || n === 3) ? 1 : 0);
+  }
+  assert.equal(typeof m.createRuleFunction, "function");
+});
+
 test("results data module exports the four datasets", async () => {
   const m = await import("../js/data/results.js");
   assert.ok(Array.isArray(m.SUCCESS_RATES) && m.SUCCESS_RATES.length === 10);

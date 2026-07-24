@@ -2,6 +2,7 @@ import { lifeStep } from "./engine/life.js";
 import { mulberry32 } from "./engine/rng.js";
 import { fitCanvas, clearCanvas, drawGrid } from "./util/canvas.js";
 import { createLifeGrid } from "./widgets/life-grid.js";
+import { createRuleFunction } from "./widgets/rule-function.js";
 
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -29,5 +30,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const lifeCanvas = document.getElementById("life-grid");
   if (lifeCanvas) {
     window.__lifeGrid = createLifeGrid(lifeCanvas, document.getElementById("life-controls"));
+  }
+
+  const ruleCanvas = document.getElementById("rule-function");
+  if (ruleCanvas) {
+    window.__ruleFunction = createRuleFunction(ruleCanvas);
   }
 });
