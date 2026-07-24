@@ -375,6 +375,121 @@ input[type="range"]::-moz-range-thumb {
   outline-offset: 2px;
 }
 
+/* ---------- Arena — live training view (Chapter 4) ---------- */
+.arena {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 18px 0;
+}
+
+.arena__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.arena__tag {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.arena__steps {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.arena__steps strong {
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+/* Shared reference row: fixed validation input + its true next state. */
+.arena__ref {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.arena__ref-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.arena__ref-label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  margin-bottom: 5px;
+  font-family: var(--font-mono);
+}
+
+.arena__ref-item canvas {
+  width: 128px;
+  height: 128px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.arena__ref-cap {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  align-self: center;
+}
+
+/* Two model columns side by side. */
+.arena__cols {
+  display: flex;
+  gap: 20px;
+}
+
+.arena__col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arena__col-label {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.arena-pred {
+  width: 100%;
+  height: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.arena__readout {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.arena-spark {
+  width: 100%;
+  height: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 720px) {
   body {
@@ -397,6 +512,17 @@ input[type="range"]::-moz-range-thumb {
   /* Keep individual canvases from dominating a small viewport. */
   .canvas-card canvas {
     max-height: 60vh;
+  }
+
+  /* Arena: stack the two model columns; shrink the reference grids. */
+  .arena__cols {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .arena__ref-item canvas {
+    width: 96px;
+    height: 96px;
   }
 
   .chapter-nav {

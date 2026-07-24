@@ -4,6 +4,7 @@ import { fitCanvas, clearCanvas, drawGrid } from "./util/canvas.js";
 import { createLifeGrid } from "./widgets/life-grid.js";
 import { createRuleFunction } from "./widgets/rule-function.js";
 import { createActivationPlot } from "./widgets/activation-plot.js";
+import { createArena } from "./arena.js";
 import { renderSuccessBars, renderDensitySweep, renderAblation, renderPCA } from "./charts/charts.js";
 import { SUCCESS_RATES, DENSITY_SWEEP, ABLATION, PCA_ILLUSTRATIVE } from "./data/results.js";
 
@@ -99,6 +100,16 @@ document.addEventListener("DOMContentLoaded", () => {
   if (zooCanvas || polyCanvas) {
     // The zoo + poly pair share one handle; observe the card that contains both.
     register(zooCanvas || polyCanvas, createActivationPlot(zooCanvas, polyCanvas, document.getElementById("poly-controls")));
+  }
+
+  // Chapter 4 — live training arena. The controller owns the whole #arena-mount
+  // subtree (multiple canvases), so we register the mount element itself with
+  // the arena handle: register() only uses the element to locate its observed
+  // root via closest(), and the arena handle exposes setPaused for IO pause.
+  const arenaMount = document.getElementById("arena-mount");
+  if (arenaMount) {
+    const arena = createArena(arenaMount, { activation: "polyKAN", width: 1, seed: 17 });
+    register(arenaMount, arena);
   }
 
   const vizSuccess = document.getElementById("viz-success");
