@@ -410,6 +410,76 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 700;
 }
 
+/* Controls bar: activation / density / lr / width / seed / speed. Wraps on
+   narrow screens (flex-wrap inherited from .controls). */
+.arena__controls {
+  gap: 12px 18px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.arena__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.arena__field-label {
+  color: var(--text-muted);
+}
+
+.arena__select,
+.arena__seed {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.arena__select:focus-visible,
+.arena__seed:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
+.arena__seed {
+  width: 72px;
+  cursor: text;
+}
+
+.arena__val {
+  min-width: 3.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-green);
+}
+
+.arena__mgroup {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.arena__mgroup button {
+  min-width: 30px;
+  padding: 4px 8px;
+}
+
+.arena__mgroup button.is-active {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(57, 255, 20, 0.08);
+}
+
 /* Shared reference row: fixed validation input + its true next state. */
 .arena__ref {
   display: flex;
@@ -518,6 +588,11 @@ input[type="range"]::-moz-range-thumb {
   .arena__cols {
     flex-direction: column;
     gap: 24px;
+  }
+
+  .arena__controls {
+    gap: 8px 12px;
+    padding: 8px 10px;
   }
 
   .arena__ref-item canvas {

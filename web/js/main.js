@@ -108,7 +108,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // root via closest(), and the arena handle exposes setPaused for IO pause.
   const arenaMount = document.getElementById("arena-mount");
   if (arenaMount) {
-    const arena = createArena(arenaMount, { activation: "polyKAN", width: 1, seed: 17 });
+    // Speed defaults to ~150 inside createArena (≈10-15s PolyKAN convergence,
+    // see arena.js). Activation/width/seed are repeated here only to keep the
+    // wiring self-documenting; reduced-motion is read inside the controller.
+    const arena = createArena(arenaMount, {
+      activation: "polyKAN",
+      width: 1,
+      seed: 17,
+      density: 0.4,
+      lr: 1e-3,
+      speed: 150,
+    });
     register(arenaMount, arena);
   }
 

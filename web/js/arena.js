@@ -27,43 +27,216 @@ export function trainStep(model, batch, t, lr = 1e-3) {
   return { loss: model.computeLoss(pred, batch.target), pred };
 }
 
+// --- pure control helpers (DOM-free) ---
+//
+// Left-column activations offered in the arena selector; the values MUST match
+// the keys accepted by engine/activations.js. The right column stays ReLU as a
+// fixed baseline, so it is not in the selector.
+export const ARENA_ACTIVATIONS = [
+  { value: "polyKAN", label: "PolyKAN" },
+  { value: "prelu", label: "PReLU" },
+  { value: "silu", label: "SiLU" },
+  { value: "square", label: "Square" },
+  { value: "relu", label: "ReLU" },
+];
+
+export function activationLabel(kind) {
+  const k = String(kind).toLowerCase();
+  const found = ARENA_ACTIVATIONS.find((a) => a.value === k || a.value.toLowerCase() === k);
+  return found ? found.label : String(kind);
+}
+
+// Normalize any-case input (opts or the <select>) to the canonical casing the
+// engine expects (activations.js switch is case-sensitive: "polyKAN", etc.).
+export function canonicalActivation(kind) {
+  const k = String(kind).toLowerCase();
+  const found = ARENA_ACTIVATIONS.find((a) => a.value.toLowerCase() === k);
+  return found ? found.value : String(kind);
+}
+
+// Learning-rate slider maps an integer position [0..LR_STEPS] onto a log scale
+// spanning [LR_MIN..LR_MAX]; slider steps are linear in position but the
+// underlying lr is exponential, so the whole useful range is reachable.
+export const LR_MIN = 1e-4;
+export const LR_MAX = 1e-2;
+export const LR_STEPS = 1000;
+
+export function lrFromSlider(v) {
+  const t = Math.max(0, Math.min(1, Number(v) / LR_STEPS));
+  return LR_MIN * Math.pow(LR_MAX / LR_MIN, t);
+}
+export function lrToSlider(lr) {
+  const clamped = Math.max(LR_MIN, Math.min(LR_MAX, lr));
+  return Math.round(
+    (Math.log(clamped) - Math.log(LR_MIN)) / (Math.log(LR_MAX) - Math.log(LR_MIN)) * LR_STEPS,
+  );
+}
+
+export function clampDensity(x) {
+  const v = Number(x);
+  if (!Number.isFinite(v)) return 0.4;
+  return Math.max(0.05, Math.min(0.95, v));
+}
+export function clampLr(x) {
+  const v = Number(x);
+  if (!Number.isFinite(v)) return 1e-3;
+  return Math.max(LR_MIN, Math.min(LR_MAX, v));
+}
+export function clampSpeed(x) {
+  const v = Number(x);
+  if (!Number.isFinite(v)) return 150;
+  return Math.max(1, Math.min(200, Math.round(v)));
+}
+
 // --- live training arena DOM controller ---
 //
 // Two LifeModels (left = PolyKAN default, right = ReLU) train live via rAF on
 // FRESH random batches; a FIXED validation input shows each model's predicted
 // next state converging toward the true next state; sparklines plot loss
-// (cyan) + accuracy (magenta); a shared step counter. All DOM/canvas/window
-// access is inside this function so the module stays Node-importable.
+// (cyan) + accuracy (magenta); a shared step counter. A controls bar lets the
+// reader steer activation / density / lr / width / seed / speed live.
+// density/lr/speed take effect on the next frame; activation/width/seed rebuild
+// the models via reset(). All DOM/canvas/window access is inside this function
+// so the module stays Node-importable (no module-top-level DOM).
 export function createArena(mountEl, opts = {}) {
   const noop = { setPaused() {}, reset() {} };
   if (!mountEl) return noop;
   const doc = mountEl.ownerDocument || (typeof document !== "undefined" ? document : null);
   if (!doc) return noop;
+  const win = doc.defaultView || (typeof window !== "undefined" ? window : null);
 
   const {
-    activation = "polyKAN",
-    width = 1,
-    seed = 17,
     H = 32,
     W = 32,
-    density = 0.4,
-    speed = 30,
-    lr = 1e-3,
     valSeed = 4242,
     ringCap = 400,
+    // Default speed bumped from ~30 to ~150 so PolyKAN's convergence cliff
+    // (roughly 5k-9k updates on 32x32 @ density 0.4) lands in ~10-15s instead
+    // of ~45-60s. The engine is cheap; 150 updates/frame still yields to the
+    // browser each rAF and keeps the UI responsive.
+    speed = 150,
   } = opts;
 
-  const leftLabel = String(activation).toLowerCase() === "polykan" ? "PolyKAN" : String(activation);
-  const updatesPerFrame = Math.max(1, Math.min(200, Math.round(speed)));
+  // Live-mutable hyperparameters. density/lr/speed read by the loop directly;
+  // activation/width/seed are consumed by build() and only change via reset().
+  // curActivation is kept in the engine's canonical casing (polyKAN, relu, ...).
+  let curActivation = canonicalActivation(opts.activation ?? "polyKAN");
+  let curWidth = Math.max(1, Math.round(opts.width ?? 1));
+  let curSeed = (opts.seed | 0) || 1;
+  let curDensity = clampDensity(opts.density ?? 0.4);
+  let curLr = clampLr(opts.lr ?? 1e-3);
+  let updatesPerFrame = clampSpeed(speed);
 
   // ----- DOM (built into mountEl) -----
   mountEl.innerHTML = "";
   const arenaEl = doc.createElement("div");
   arenaEl.className = "arena";
 
-  // Header bar: tag + shared step counter + pause/reset. (The chapter h2 already
-  // reads "Watch it learn, live", so the bar carries an informational tag instead
-  // of repeating that title.)
+  // Controls bar: activation / density / lr / width / seed / speed. Wraps on
+  // narrow screens (flex-wrap) — see .arena__controls in style.css.
+  const controls = doc.createElement("div");
+  controls.className = "arena__controls controls";
+
+  function field(labelText, ...kids) {
+    const lab = doc.createElement("label");
+    lab.className = "arena__field";
+    const txt = doc.createElement("span");
+    txt.className = "arena__field-label";
+    txt.textContent = labelText;
+    lab.appendChild(txt);
+    for (const k of kids) if (k) lab.appendChild(k);
+    return lab;
+  }
+
+  // Activation <select> — drives the LEFT column only (right stays ReLU).
+  const actSel = doc.createElement("select");
+  actSel.className = "arena__select";
+  actSel.setAttribute("aria-label", "Left column activation");
+  for (const a of ARENA_ACTIVATIONS) {
+    const o = doc.createElement("option");
+    o.value = a.value;
+    o.textContent = a.label;
+    if (a.value === curActivation) o.selected = true;
+    actSel.appendChild(o);
+  }
+
+  // Density slider — live (next batch uses the new density).
+  const densRange = doc.createElement("input");
+  densRange.type = "range";
+  densRange.min = "0.05";
+  densRange.max = "0.95";
+  densRange.step = "0.01";
+  densRange.value = curDensity.toFixed(2);
+  densRange.setAttribute("aria-label", "Density");
+  const densVal = doc.createElement("span");
+  densVal.className = "arena__val";
+  densVal.textContent = curDensity.toFixed(2);
+
+  // Learning-rate slider — log scale (position 0..LR_STEPS), live.
+  const lrRange = doc.createElement("input");
+  lrRange.type = "range";
+  lrRange.min = "0";
+  lrRange.max = String(LR_STEPS);
+  lrRange.step = "1";
+  lrRange.value = String(lrToSlider(curLr));
+  lrRange.setAttribute("aria-label", "Learning rate");
+  const lrVal = doc.createElement("span");
+  lrVal.className = "arena__val";
+  lrVal.textContent = curLr.toExponential(1);
+
+  // Width-m button group — reset() with the new width.
+  const mGroup = doc.createElement("span");
+  mGroup.className = "arena__mgroup";
+  mGroup.setAttribute("role", "group");
+  mGroup.setAttribute("aria-label", "Width m");
+  const mBtns = {};
+  for (const m of [1, 2, 4]) {
+    const b = doc.createElement("button");
+    b.type = "button";
+    b.textContent = String(m);
+    b.dataset.m = String(m);
+    if (m === curWidth) b.classList.add("is-active");
+    mBtns[m] = b;
+    mGroup.appendChild(b);
+  }
+
+  // Seed input + reshuffle — both reset() with the (new) seed.
+  const seedInput = doc.createElement("input");
+  seedInput.type = "number";
+  seedInput.min = "0";
+  seedInput.step = "1";
+  seedInput.value = String(curSeed);
+  seedInput.className = "arena__seed";
+  seedInput.setAttribute("aria-label", "Random seed");
+  const reshuffleBtn = doc.createElement("button");
+  reshuffleBtn.type = "button";
+  reshuffleBtn.textContent = "reshuffle";
+
+  // Speed slider — live (updates per frame).
+  const speedRange = doc.createElement("input");
+  speedRange.type = "range";
+  speedRange.min = "1";
+  speedRange.max = "200";
+  speedRange.step = "1";
+  speedRange.value = String(updatesPerFrame);
+  speedRange.setAttribute("aria-label", "Updates per frame");
+  const speedVal = doc.createElement("span");
+  speedVal.className = "arena__val";
+  speedVal.textContent = String(updatesPerFrame);
+
+  controls.append(
+    field("activation", actSel),
+    field("density", densRange, densVal),
+    field("lr", lrRange, lrVal),
+    field("m", mGroup),
+    field("seed", seedInput, reshuffleBtn),
+    field("speed", speedRange, speedVal),
+  );
+  arenaEl.appendChild(controls);
+
+  // Header bar: tag + shared step counter + pause/reset. (The chapter h2
+  // already reads "Watch it learn, live", so the bar carries an informational
+  // tag instead of repeating that title.)
   const bar = doc.createElement("div");
   bar.className = "arena__bar";
   const tag = doc.createElement("span");
@@ -111,7 +284,8 @@ export function createArena(mountEl, opts = {}) {
   const inputCanvas = refIn.canvas;
   const trueCanvas = refTrue.canvas;
 
-  // Two model columns.
+  // Two model columns. `lab` is returned so setActivation can relabel the left
+  // column when the reader picks a new activation.
   const cols = doc.createElement("div");
   cols.className = "arena__cols";
   function makeCol(labelText) {
@@ -132,9 +306,9 @@ export function createArena(mountEl, opts = {}) {
     spark.width = 288;
     spark.height = 56;
     col.append(lab, pred, readout, spark);
-    return { col, pred, readout, spark };
+    return { col, lab, pred, readout, spark };
   }
-  const leftCol = makeCol(leftLabel);
+  const leftCol = makeCol(activationLabel(curActivation));
   const rightCol = makeCol("ReLU");
   cols.append(leftCol.col, rightCol.col);
   arenaEl.appendChild(cols);
@@ -168,19 +342,20 @@ export function createArena(mountEl, opts = {}) {
   const rightLoss = makeRing(ringCap), rightAcc = makeRing(ringCap);
 
   function build() {
-    // Fixed validation input (seeded, stable across frames; regenerated on reset).
+    // Fixed validation input (seeded, stable across frames; regenerated on
+    // reset so a new seed/width/density reshapes the example too).
     const valRng = mulberry32(valSeed);
     valInput = new Float32Array(H * W);
-    for (let i = 0; i < valInput.length; i++) valInput[i] = valRng() < density ? 1 : 0;
+    for (let i = 0; i < valInput.length; i++) valInput[i] = valRng() < curDensity ? 1 : 0;
     valTrue = lifeStep(valInput, H, W);
 
-    leftModel = new LifeModel({ width, depth: 1, activation, seed });
+    leftModel = new LifeModel({ width: curWidth, depth: 1, activation: curActivation, seed: curSeed });
     leftModel.resize(H, W);
-    rightModel = new LifeModel({ width, depth: 1, activation: "relu", seed });
+    rightModel = new LifeModel({ width: curWidth, depth: 1, activation: "relu", seed: curSeed });
     rightModel.resize(H, W);
 
     // Distinct training stream (XOR'd seed) so it diverges from model init.
-    trainRng = mulberry32((seed ^ 0x9e3779b9) >>> 0);
+    trainRng = mulberry32((curSeed ^ 0x9e3779b9) >>> 0);
     t = 0;
     stepCount = 0;
     for (const r of [leftLoss, leftAcc, rightLoss, rightAcc]) { r.head = 0; r.len = 0; }
@@ -261,13 +436,14 @@ export function createArena(mountEl, opts = {}) {
   }
 
   // ----- training loop -----
-  // One update: a SINGLE fresh batch trains BOTH models with the SAME t — a fair
-  // head-to-head. trainStep does zeroGrad -> forward -> backward -> step.
+  // One update: a SINGLE fresh batch trains BOTH models with the SAME t — a
+  // fair head-to-head. trainStep does zeroGrad -> forward -> backward -> step.
+  // Reads live state (curDensity/curLr) so the sliders take effect instantly.
   function trainOnce() {
-    const batch = makeBatch(H, W, density, trainRng);
+    const batch = makeBatch(H, W, curDensity, trainRng);
     t++;
-    const lRes = trainStep(leftModel, batch, t, lr);
-    const rRes = trainStep(rightModel, batch, t, lr);
+    const lRes = trainStep(leftModel, batch, t, curLr);
+    const rRes = trainStep(rightModel, batch, t, curLr);
     ringPush(leftLoss, lRes.loss);
     ringPush(rightLoss, rRes.loss);
     ringPush(leftAcc, gridAccuracy(lRes.pred, batch.target));
@@ -302,9 +478,64 @@ export function createArena(mountEl, opts = {}) {
   function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; }
   function start() { if (raf || userPaused || visPaused) return; raf = requestAnimationFrame(frame); }
 
+  // ----- setters (used by the controls bar) -----
+  // activation/width/seed rebuild models + clear buffers via reset(); the
+  // caller is responsible for any UI affordance (e.g. button active-state).
+  function setActivation(kind) {
+    curActivation = canonicalActivation(kind);
+    leftCol.lab.textContent = activationLabel(curActivation);
+    reset();
+  }
+  function setWidth(m) {
+    curWidth = Math.max(1, Math.round(m));
+    for (const k of [1, 2, 4]) mBtns[k].classList.toggle("is-active", k === curWidth);
+    reset();
+  }
+  function setSeed(s) {
+    const v = (s | 0) || 1;
+    curSeed = v;
+    seedInput.value = String(v);
+    reset();
+  }
+
+  // ----- control wiring -----
+  actSel.addEventListener("change", () => setActivation(actSel.value));
+
+  densRange.addEventListener("input", () => {
+    curDensity = clampDensity(parseFloat(densRange.value));
+    densVal.textContent = curDensity.toFixed(2);
+  });
+
+  lrRange.addEventListener("input", () => {
+    curLr = clampLr(lrFromSlider(parseInt(lrRange.value, 10)));
+    lrVal.textContent = curLr.toExponential(1);
+  });
+
+  mGroup.addEventListener("click", (e) => {
+    const t = e.target.closest("button[data-m]");
+    if (!t) return;
+    setWidth(parseInt(t.dataset.m, 10));
+  });
+
+  reshuffleBtn.addEventListener("click", () => {
+    // Pick a fresh random seed (the reshuffle action), then reset with it.
+    const v = (Math.random() * 1e9) | 0;
+    setSeed(v);
+  });
+
+  seedInput.addEventListener("change", () => {
+    const v = parseInt(seedInput.value, 10);
+    if (Number.isFinite(v)) setSeed(v);
+  });
+
+  speedRange.addEventListener("input", () => {
+    updatesPerFrame = clampSpeed(parseInt(speedRange.value, 10));
+    speedVal.textContent = String(updatesPerFrame);
+  });
+
   pauseBtn.addEventListener("click", () => {
     userPaused = !userPaused;
-    pauseBtn.textContent = userPaused ? "Resume" : "Pause";
+    pauseBtn.textContent = userPaused ? "Play" : "Pause";
     if (userPaused) stop(); else { render(); start(); }
   });
   function reset() {
@@ -314,16 +545,32 @@ export function createArena(mountEl, opts = {}) {
   }
   resetBtn.addEventListener("click", reset);
 
-  const win = doc.defaultView || (typeof window !== "undefined" ? window : null);
   if (win) win.addEventListener("resize", () => {
     drawBinary(inputCanvas, valInput, "#39ff14");
     drawBinary(trueCanvas, valTrue, "#39ff14");
     render();
   });
 
+  // Reduced-motion (spec §10): do NOT auto-start; surface a Play button so the
+  // reader begins training explicitly. Read from matchMedia inside this
+  // function (not at module top level) so the module stays Node-importable.
+  function prefersReducedMotion() {
+    try {
+      return !!win && typeof win.matchMedia === "function"
+        && win.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch {
+      return false;
+    }
+  }
+
   build();
   render();
-  start();
+  if (prefersReducedMotion()) {
+    userPaused = true;
+    pauseBtn.textContent = "Play";
+  } else {
+    start();
+  }
 
   return {
     // Visibility pause (IntersectionObserver): cancel/restart the RAF.
@@ -332,5 +579,12 @@ export function createArena(mountEl, opts = {}) {
       if (visPaused) stop(); else start();
     },
     reset,
+    // Exposed for smoke/static-verify tests: live hyperparameter accessors.
+    getDensity: () => curDensity,
+    getLr: () => curLr,
+    getSpeed: () => updatesPerFrame,
+    getActivation: () => curActivation,
+    getWidth: () => curWidth,
+    getSeed: () => curSeed,
   };
 }
