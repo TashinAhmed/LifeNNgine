@@ -8,6 +8,13 @@ test("canvas util imports without DOM access", async () => {
   assert.equal(typeof m.easeInOut, "function");
 });
 
+test("life-grid module imports without DOM access", async () => {
+  const m = await import("../js/widgets/life-grid.js");
+  assert.ok(m.PRESETS && m.PRESETS.glider && m.PRESETS.pulsar);
+  assert.equal(typeof m.stampPreset, "function");
+  assert.equal(typeof m.createLifeGrid, "function");
+});
+
 test("results data module exports the four datasets", async () => {
   const m = await import("../js/data/results.js");
   assert.ok(Array.isArray(m.SUCCESS_RATES) && m.SUCCESS_RATES.length === 10);
