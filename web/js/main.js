@@ -35,8 +35,8 @@ export function initHero(canvas) {
     const view = fitCanvas(canvas);
     if (view && view.ctx) {
       const { ctx, cssW, cssH } = view;
-      clearCanvas(ctx, canvas.width, canvas.height, "rgba(11,13,16,0)");
-      drawGrid(ctx, grid, H, W, Math.min(cssW / W, cssH / H), { on: "rgba(57,255,20,0.10)", off: "transparent", gridline: "transparent" });
+      clearCanvas(ctx, canvas.width, canvas.height, "rgba(0,0,0,0)");
+      drawGrid(ctx, grid, H, W, Math.min(cssW / W, cssH / H), { on: "rgba(22,163,74,0.18)", off: "transparent", gridline: "transparent" });
     }
     raf = requestAnimationFrame(frame);
   }

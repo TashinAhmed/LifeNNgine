@@ -28,14 +28,14 @@ export function createRuleFunction(canvas) {
 
   const PAD = { l: 40, r: 16, t: 18, b: 34 };
   const COLORS = {
-    bg: "#0b0d10",
-    axis: "#2a3138",
-    grid: "#161b20",
-    label: "#9aa4b2",
-    rule: "#39ff14",
-    relu: "#ffb454",
-    parabola: "#56d4dd",
-    probe: "#e6edf3",
+    bg: "#e9ecf1",
+    axis: "#8a929d",
+    grid: "#d4d9e0",
+    label: "#3c4043",
+    rule: "#16a34a",
+    relu: "#d97706",
+    parabola: "#0891b2",
+    probe: "#3c4043",
   };
 
   let probeN = 3; // integer neighbor count the probe currently inspects
@@ -173,7 +173,7 @@ export function createRuleFunction(canvas) {
     const tw = ctx.measureText(text).width;
     const bx = Math.min(Math.max(PAD.l + 4, px + 8), PAD.l + plotW - tw - 8);
     const by = PAD.t + 4;
-    ctx.fillStyle = "rgba(11,13,16,0.85)";
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
     ctx.fillRect(bx - 6, by - 2, tw + 12, 20);
     ctx.strokeStyle = COLORS.probe;
     ctx.lineWidth = 1;

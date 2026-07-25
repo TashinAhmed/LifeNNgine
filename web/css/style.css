@@ -1,4 +1,4 @@
-/* LifeNNgine interactive page — dark theme. No external fonts or libraries. */
+/* LifeNNgine interactive page — silvery white theme. No external fonts or libraries. */
 
 /* ---------- Reset basics ---------- */
 *,
@@ -54,17 +54,17 @@ code {
 
 /* ---------- Design tokens (palette per spec §10) ---------- */
 :root {
-  --bg: #0b0d10;
-  --surface: #11151a;
-  --card: #0d1014;
-  --border: #1c2025;
-  --text: #e8eaed;
-  --text-muted: #9aa0a6;
+  --bg: #e9ecf1;
+  --surface: #f0f2f6;
+  --card: #f6f8fa;
+  --border: #cdd2da;
+  --text: #1f2228;
+  --text-muted: #5b6168;
 
-  --accent-green: #39ff14;
-  --accent-amber: #ffb454;
-  --accent-cyan: #22d3ee;
-  --accent-magenta: #e879f9;
+  --accent-green: #16a34a;
+  --accent-amber: #d97706;
+  --accent-cyan: #0891b2;
+  --accent-magenta: #c026d3;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -307,7 +307,7 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
   gap: 4px;
   padding: 8px max(20px, calc((100vw - var(--page-max)) / 2));
-  background: rgba(11, 13, 16, 0.85);
+  background: rgba(233, 236, 241, 0.85);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
@@ -477,7 +477,7 @@ input[type="range"]::-moz-range-thumb {
 .arena__mgroup button.is-active {
   border-color: var(--accent-green);
   color: var(--accent-green);
-  background: rgba(57, 255, 20, 0.08);
+  background: rgba(22, 163, 74, 0.10);
 }
 
 /* Shared reference row: fixed validation input + its true next state. */

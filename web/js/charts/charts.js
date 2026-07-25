@@ -27,18 +27,18 @@ export function linearScale(domain, range) {
 // ---- Shared palette ----
 
 const COLORS = {
-  bg: "#0b0d10",
-  axis: "#2a3138",
-  grid: "#161b20",
-  label: "#9aa4b2",
-  text: "#cdd6e0",
-  polyKAN: "#39ff14",
-  relu: "#ffb454",
-  prelu: "#22d3ee",
-  silu: "#e879f9",
-  sigmoid: "#f472b6",
+  bg: "#e9ecf1",
+  axis: "#8a929d",
+  grid: "#d4d9e0",
+  label: "#3c4043",
+  text: "#3c4043",
+  polyKAN: "#16a34a",
+  relu: "#d97706",
+  prelu: "#0891b2",
+  silu: "#c026d3",
+  sigmoid: "#db2777",
   muted: "#6b7280",
-  tooltipBg: "rgba(11,13,16,0.92)",
+  tooltipBg: "rgba(255,255,255,0.95)",
 };
 
 // Viz 1 color rule: green = PolyKAN, amber = ReLU, gray = everything else.

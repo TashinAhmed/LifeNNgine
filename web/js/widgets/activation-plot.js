@@ -48,12 +48,12 @@ export function isMonotonicOver(coeffs, xMin, xMax, steps = 200) {
 
 // Standard activation functions (pure). PReLU uses leak slope a=0.25.
 export const ACTIVATIONS = [
-  { key: "relu",    label: "ReLU",    color: "#ffb454", fn: (x) => Math.max(0, x) },
-  { key: "prelu",   label: "PReLU",   color: "#ff5c8a", fn: (x) => (x > 0 ? x : 0.25 * x) },
-  { key: "silu",    label: "SiLU",    color: "#56d4dd", fn: (x) => x / (1 + Math.exp(-x)) },
-  { key: "sigmoid", label: "Sigmoid", color: "#b58aff", fn: (x) => 1 / (1 + Math.exp(-x)) },
-  { key: "tanh",    label: "Tanh",    color: "#5c9eff", fn: (x) => Math.tanh(x) },
-  { key: "square",  label: "Square",  color: "#f0e442", fn: (x) => x * x },
+  { key: "relu",    label: "ReLU",    color: "#d97706", fn: (x) => Math.max(0, x) },
+  { key: "prelu",   label: "PReLU",   color: "#db2777", fn: (x) => (x > 0 ? x : 0.25 * x) },
+  { key: "silu",    label: "SiLU",    color: "#0891b2", fn: (x) => x / (1 + Math.exp(-x)) },
+  { key: "sigmoid", label: "Sigmoid", color: "#7c3aed", fn: (x) => 1 / (1 + Math.exp(-x)) },
+  { key: "tanh",    label: "Tanh",    color: "#2563eb", fn: (x) => Math.tanh(x) },
+  { key: "square",  label: "Square",  color: "#ca8a04", fn: (x) => x * x },
 ];
 
 // DOM controller for Widget C. All DOM/canvas access is inside this function.
@@ -72,12 +72,12 @@ export function createActivationPlot(zooCanvas, polyCanvas, controlsEl) {
 
   const PAD = { l: 40, r: 16, t: 18, b: 34 };
   const COLORS = {
-    bg: "#0b0d10",
-    axis: "#2a3138",
-    grid: "#161b20",
-    label: "#9aa4b2",
-    rule: "#39ff14",
-    poly: "#ffb454",
+    bg: "#e9ecf1",
+    axis: "#8a929d",
+    grid: "#d4d9e0",
+    label: "#3c4043",
+    rule: "#16a34a",
+    poly: "#d97706",
   };
 
   // --- zoo state: x∈[-3,3], y∈[-1,2]; all activations on by default ---
@@ -231,7 +231,7 @@ export function createActivationPlot(zooCanvas, polyCanvas, controlsEl) {
     ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
     const tw = ctx.measureText(text).width;
     const bx = PAD.l + 8, by = PAD.t + 6;
-    ctx.fillStyle = "rgba(11,13,16,0.85)";
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
     ctx.fillRect(bx - 6, by - 2, tw + 12, 20);
     ctx.strokeStyle = mono ? COLORS.rule : COLORS.poly;
     ctx.lineWidth = 1;
@@ -267,14 +267,14 @@ export function createActivationPlot(zooCanvas, polyCanvas, controlsEl) {
   if (controlsEl) {
     // Group 1: activation toggles (zoo legend)
     const zooGroup = doc.createElement("fieldset");
-    zooGroup.style.cssText = "border:1px solid #2a3138;padding:8px 12px;margin:0 0 10px 0;border-radius:3px;";
+    zooGroup.style.cssText = "border:1px solid #cdd2da;padding:8px 12px;margin:0 0 10px 0;border-radius:3px;";
     const zooLegend = doc.createElement("legend");
     zooLegend.textContent = "Activations";
     zooLegend.style.color = COLORS.label;
     zooGroup.appendChild(zooLegend);
     for (const a of ACTIVATIONS) {
       const label = doc.createElement("label");
-      label.style.cssText = "display:inline-flex;align-items:center;gap:4px;margin-right:12px;color:#cdd6e0;cursor:pointer;";
+      label.style.cssText = "display:inline-flex;align-items:center;gap:4px;margin-right:12px;color:#3c4043;cursor:pointer;";
       const cb = doc.createElement("input");
       cb.type = "checkbox";
       cb.checked = true;
@@ -292,7 +292,7 @@ export function createActivationPlot(zooCanvas, polyCanvas, controlsEl) {
 
     // Group 2: poly sliders
     const polyGroup = doc.createElement("fieldset");
-    polyGroup.style.cssText = "border:1px solid #2a3138;padding:8px 12px;margin:0 0 10px 0;border-radius:3px;";
+    polyGroup.style.cssText = "border:1px solid #cdd2da;padding:8px 12px;margin:0 0 10px 0;border-radius:3px;";
     const polyLegend = doc.createElement("legend");
     polyLegend.textContent = "Sculpt f(x) = w\u2080 + w\u2081x + w\u2082x\u00b2";
     polyLegend.style.color = COLORS.label;
@@ -310,7 +310,7 @@ export function createActivationPlot(zooCanvas, polyCanvas, controlsEl) {
       const label = doc.createElement("label");
       label.htmlFor = `poly-w-${r.i}`;
       label.textContent = r.name;
-      label.style.cssText = "width:24px;color:#cdd6e0;";
+      label.style.cssText = "width:24px;color:#3c4043;";
       const input = doc.createElement("input");
       input.type = "range";
       input.id = `poly-w-${r.i}`;
@@ -320,7 +320,7 @@ export function createActivationPlot(zooCanvas, polyCanvas, controlsEl) {
       input.value = String(w[r.i]);
       input.style.flex = "1";
       const val = doc.createElement("span");
-      val.style.cssText = "width:52px;text-align:right;color:#9aa4b2;font-family:ui-monospace,monospace;font-size:11px;";
+      val.style.cssText = "width:52px;text-align:right;color:#5b6168;font-family:ui-monospace,monospace;font-size:11px;";
       val.textContent = fmt(w[r.i]);
       input.addEventListener("input", () => {
         w[r.i] = Number(input.value) || 0;
@@ -332,7 +332,7 @@ export function createActivationPlot(zooCanvas, polyCanvas, controlsEl) {
     }
 
     readoutEl = doc.createElement("p");
-    readoutEl.style.cssText = "margin:8px 0 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#39ff14;";
+    readoutEl.style.cssText = "margin:8px 0 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#16a34a;";
 
     controlsEl.append(zooGroup, polyGroup, readoutEl);
   }

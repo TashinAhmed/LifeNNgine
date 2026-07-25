@@ -363,8 +363,8 @@ export function createArena(mountEl, opts = {}) {
     for (const r of [leftLoss, leftAcc, rightLoss, rightAcc]) { r.head = 0; r.len = 0; }
 
     stepsEl.textContent = "0";
-    drawBinary(inputCanvas, valInput, "#39ff14");
-    drawBinary(trueCanvas, valTrue, "#39ff14");
+    drawBinary(inputCanvas, valInput, "#16a34a");
+    drawBinary(trueCanvas, valTrue, "#16a34a");
   }
 
   // ----- rendering -----
@@ -374,7 +374,7 @@ export function createArena(mountEl, opts = {}) {
     const { ctx, cssW, cssH } = view;
     const cellPx = Math.min(cssW / W, cssH / H);
     clearCanvas(ctx, canvas.width, canvas.height);
-    drawGrid(ctx, grid, H, W, cellPx, { on: onColor, off: "#11151a", gridline: "#1c2025" });
+    drawGrid(ctx, grid, H, W, cellPx, { on: onColor, off: "#f6f8fa", gridline: "#cdd2da" });
   }
 
   // Predicted grid: shade each cell by confidence (|p-0.5|*2), on-color where
@@ -391,12 +391,12 @@ export function createArena(mountEl, opts = {}) {
         const on = p > 0.5;
         const conf = on ? (p - 0.5) * 2 : (0.5 - p) * 2;
         ctx.globalAlpha = 0.12 + 0.88 * conf;
-        ctx.fillStyle = on ? onColor : "#11151a";
+        ctx.fillStyle = on ? onColor : "#f6f8fa";
         ctx.fillRect(w * cellPx, h * cellPx, cellPx, cellPx);
       }
     }
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = "#1c2025";
+    ctx.strokeStyle = "#cdd2da";
     ctx.lineWidth = 1;
     for (let h = 0; h <= H; h++) { ctx.beginPath(); ctx.moveTo(0, h * cellPx); ctx.lineTo(W * cellPx, h * cellPx); ctx.stroke(); }
     for (let w = 0; w <= W; w++) { ctx.beginPath(); ctx.moveTo(w * cellPx, 0); ctx.lineTo(w * cellPx, H * cellPx); ctx.stroke(); }
@@ -406,11 +406,11 @@ export function createArena(mountEl, opts = {}) {
     const view = fitCanvas(canvas);
     if (!view || !view.ctx) return;
     const { ctx, cssW, cssH } = view;
-    clearCanvas(ctx, canvas.width, canvas.height, "#0b0d10");
+    clearCanvas(ctx, canvas.width, canvas.height, "#e9ecf1");
     const padL = 6, padR = 6, padT = 5, padB = 5;
     const plotW = Math.max(1, cssW - padL - padR);
     const plotH = Math.max(1, cssH - padT - padB);
-    ctx.strokeStyle = "#1c2025";
+    ctx.strokeStyle = "#cdd2da";
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(padL, padT + plotH); ctx.lineTo(padL + plotW, padT + plotH); ctx.stroke();
 
@@ -433,8 +433,8 @@ export function createArena(mountEl, opts = {}) {
       }
       ctx.stroke();
     }
-    line(lossRing, (v) => padT + plotH * (1 - Math.min(1, v / maxLoss)), "#22d3ee"); // cyan = loss
-    line(accRing, (v) => padT + plotH * (1 - v), "#e879f9"); // magenta = accuracy
+    line(lossRing, (v) => padT + plotH * (1 - Math.min(1, v / maxLoss)), "#0891b2"); // cyan = loss
+    line(accRing, (v) => padT + plotH * (1 - v), "#c026d3"); // magenta = accuracy
   }
 
   // ----- training loop -----
@@ -458,8 +458,8 @@ export function createArena(mountEl, opts = {}) {
     // example (independent of the fresh training batches).
     const lp = leftModel.forward(valInput);
     const rp = rightModel.forward(valInput);
-    drawPred(leftCol.pred, lp, "#39ff14");  // green
-    drawPred(rightCol.pred, rp, "#ffb454"); // amber
+    drawPred(leftCol.pred, lp, "#16a34a");  // green
+    drawPred(rightCol.pred, rp, "#d97706"); // amber
     const lAcc = gridAccuracy(lp, valTrue);
     const rAcc = gridAccuracy(rp, valTrue);
     leftCol.readout.textContent = `accuracy: ${(lAcc * 100).toFixed(1)}%`;
@@ -548,8 +548,8 @@ export function createArena(mountEl, opts = {}) {
   resetBtn.addEventListener("click", reset);
 
   if (win) win.addEventListener("resize", () => {
-    drawBinary(inputCanvas, valInput, "#39ff14");
-    drawBinary(trueCanvas, valTrue, "#39ff14");
+    drawBinary(inputCanvas, valInput, "#16a34a");
+    drawBinary(trueCanvas, valTrue, "#16a34a");
     render();
   });
 

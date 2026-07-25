@@ -12,14 +12,14 @@ export function fitCanvas(canvas) {
   return { ctx, w: canvas.width, h: canvas.height, cssW, cssH, dpr };
 }
 
-export function clearCanvas(ctx, w, h, bg = "#0b0d10") {
+export function clearCanvas(ctx, w, h, bg = "#e9ecf1") {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 }
 
 // Draw a flat HxW binary grid. flash: optional Uint8Array same length; cells that
 // just changed are drawn with the flash color border.
-export function drawGrid(ctx, grid, H, W, cellPx, { on = "#39ff14", off = "#11151a", gridline = "#1c2025", flash = null, flashColor = "#ffb454" } = {}) {
+export function drawGrid(ctx, grid, H, W, cellPx, { on = "#16a34a", off = "#f6f8fa", gridline = "#cdd2da", flash = null, flashColor = "#d97706" } = {}) {
   for (let h = 0; h < H; h++) {
     for (let w = 0; w < W; w++) {
       const i = h * W + w;
