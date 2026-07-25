@@ -36,9 +36,12 @@ test("gridAccuracy is 1 for identical and <1 for a flipped bit", () => {
 });
 
 // Deviation from brief (documented per train.test.js): single-batch-per-step
-// plateaus near the majority-class BCE (~0.63) even at 20k steps and never
-// halves. polyKAN's convergence cliff on 16x16@0.4 is ~11k outer steps with
-// batch=8 (96k updates) — the repo's own proven config in train.test.js.
+// causes the BCE *loss* to plateau near the majority-class baseline (~0.63)
+// even at 20k steps, so it never halves here. Note: this is a loss-only
+// plateau — *accuracy* still converges to ~100% given enough updates, as the
+// live arena demonstrates (polyKAN on 32x32@0.4, batch=1). polyKAN's
+// convergence cliff on 16x16@0.4 is ~11k outer steps with batch=8 (96k
+// updates) — the repo's own proven config in train.test.js.
 test("trainStep reduces loss over many steps on fresh data (polyKAN)", () => {
   const rng = mulberry32(7);
   const m = new LifeModel({ width: 1, depth: 1, activation: "polyKAN", seed: 17 });
@@ -107,6 +110,6 @@ test("clamp helpers saturate at the documented bounds", () => {
   assert.equal(clampLr(NaN), 1e-3);
   assert.equal(clampSpeed(150), 150);
   assert.equal(clampSpeed(0), 1);
-  assert.equal(clampSpeed(999), 200);
-  assert.equal(clampSpeed(NaN), 150);
+  assert.equal(clampSpeed(999), 500);
+  assert.equal(clampSpeed(NaN), 300);
 });

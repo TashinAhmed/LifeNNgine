@@ -84,8 +84,8 @@ export function clampLr(x) {
 }
 export function clampSpeed(x) {
   const v = Number(x);
-  if (!Number.isFinite(v)) return 150;
-  return Math.max(1, Math.min(200, Math.round(v)));
+  if (!Number.isFinite(v)) return 300;
+  return Math.max(1, Math.min(500, Math.round(v)));
 }
 
 // --- live training arena DOM controller ---
@@ -110,11 +110,13 @@ export function createArena(mountEl, opts = {}) {
     W = 32,
     valSeed = 4242,
     ringCap = 400,
-    // Default speed bumped from ~30 to ~150 so PolyKAN's convergence cliff
-    // (roughly 5k-9k updates on 32x32 @ density 0.4) lands in ~10-15s instead
-    // of ~45-60s. The engine is cheap; 150 updates/frame still yields to the
-    // browser each rAF and keeps the UI responsive.
-    speed = 150,
+    // Default speed ~300 updates/frame: PolyKAN reaches ~75% quickly, plateaus
+    // at ~75% from ~3k-30k batch-1 updates, then climbs to 100% around ~30k-60k
+    // updates (the ~60k cliff lands in ~3-4s at 300/frame). ReLU stays near the
+    // ~58% majority-class baseline throughout. The engine is cheap; even at the
+    // 500/frame clamp ceiling each rAF still yields to the browser and keeps the
+    // UI responsive.
+    speed = 300,
   } = opts;
 
   // Live-mutable hyperparameters. density/lr/speed read by the loop directly;
@@ -216,7 +218,7 @@ export function createArena(mountEl, opts = {}) {
   const speedRange = doc.createElement("input");
   speedRange.type = "range";
   speedRange.min = "1";
-  speedRange.max = "200";
+  speedRange.max = "500";
   speedRange.step = "1";
   speedRange.value = String(updatesPerFrame);
   speedRange.setAttribute("aria-label", "Updates per frame");
@@ -512,9 +514,9 @@ export function createArena(mountEl, opts = {}) {
   });
 
   mGroup.addEventListener("click", (e) => {
-    const t = e.target.closest("button[data-m]");
-    if (!t) return;
-    setWidth(parseInt(t.dataset.m, 10));
+    const target = e.target.closest("button[data-m]");
+    if (!target) return;
+    setWidth(parseInt(target.dataset.m, 10));
   });
 
   reshuffleBtn.addEventListener("click", () => {
