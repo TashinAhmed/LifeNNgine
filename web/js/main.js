@@ -23,7 +23,10 @@ const REDUCED_MOTION = (() => {
 // Returns { setPaused(bool), stop() }. Respects REDUCED_MOTION (no auto-start),
 // so a visibility pause/resume from the IntersectionObserver is always safe.
 export function initHero(canvas) {
-  const H = 48, W = 96;
+  // Wider grid now that the canvas spans the full viewport width: a denser
+  // field of cells reads as a fine texture rather than a chunky left-aligned
+  // block when the canvas is much wider than it is tall.
+  const H = 48, W = 144;
   let grid = new Uint8Array(H * W);
   const rng = mulberry32(2026);
   for (let i = 0; i < grid.length; i++) grid[i] = rng() < 0.35 ? 1 : 0;
@@ -35,8 +38,16 @@ export function initHero(canvas) {
     const view = fitCanvas(canvas);
     if (view && view.ctx) {
       const { ctx, cssW, cssH } = view;
+      const cellPx = Math.min(cssW / W, cssH / H);
+      // Center the grid in the (now full-viewport-width) canvas so the motif
+      // reads edge-to-edge without hugging the left margin.
+      const ox = (cssW - W * cellPx) / 2;
+      const oy = (cssH - H * cellPx) / 2;
       clearCanvas(ctx, canvas.width, canvas.height, "rgba(0,0,0,0)");
-      drawGrid(ctx, grid, H, W, Math.min(cssW / W, cssH / H), { on: "rgba(22,163,74,0.18)", off: "transparent", gridline: "transparent" });
+      ctx.save();
+      ctx.translate(ox, oy);
+      drawGrid(ctx, grid, H, W, cellPx, { on: "rgba(22,163,74,0.18)", off: "transparent", gridline: "transparent" });
+      ctx.restore();
     }
     raf = requestAnimationFrame(frame);
   }

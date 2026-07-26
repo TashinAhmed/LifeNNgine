@@ -54,6 +54,8 @@ export function createLifeGrid(canvas, controlsEl, opts = {}) {
   let running = false;   // Play/Pause toggle
   let paused = false;    // visibility pause (setPaused), set later by IntersectionObserver
   let cellPx = 0;        // recomputed each render; used by pointer paint
+  let originX = 0;       // pixel offset of the grid inside the canvas (for paint hit-test)
+  let originY = 0;
   let raf = 0;
   let lastStep = 0;
 
@@ -64,8 +66,16 @@ export function createLifeGrid(canvas, controlsEl, opts = {}) {
     if (!view || !view.ctx) return;
     const { ctx, cssW, cssH } = view;
     cellPx = Math.min(cssW / W, cssH / H);
+    // Center the square grid inside the (possibly wider) canvas so it never
+    // hugs the left edge. With aspect-ratio:1/1 in CSS this is usually a no-op,
+    // but it keeps the widget correct on any canvas shape.
+    originX = (cssW - W * cellPx) / 2;
+    originY = (cssH - H * cellPx) / 2;
     clearCanvas(ctx, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(originX, originY);
     drawGrid(ctx, grid, H, W, cellPx, { flash });
+    ctx.restore();
     // Flash is a one-frame highlight of births/deaths; clear after drawing.
     flash.fill(0);
   }
@@ -114,8 +124,9 @@ export function createLifeGrid(canvas, controlsEl, opts = {}) {
   function paintAt(e) {
     if (!cellPx) return;
     const rect = canvas.getBoundingClientRect();
-    const c = Math.floor((e.clientX - rect.left) / cellPx);
-    const r = Math.floor((e.clientY - rect.top) / cellPx);
+    // Account for the centered origin so painting maps to the visible cell.
+    const c = Math.floor((e.clientX - rect.left - originX) / cellPx);
+    const r = Math.floor((e.clientY - rect.top - originY) / cellPx);
     if (r < 0 || r >= H || c < 0 || c >= W) return;
     grid[r * W + c] = e.shiftKey ? 0 : 1;
   }
