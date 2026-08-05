@@ -68,9 +68,9 @@
     <!-- Chapter 3 - Why it's hard -->
     <section class="chapter" id="ch-why-hard">
       <h2 class="chapter__title">Why it&rsquo;s hard (ReLU &amp; lottery tickets)</h2>
-      <p class="chapter__lead">If the rule is so simple, why do standard networks struggle? The answer is the shape of the function - and the inductive bias of the activation.</p>
-      <p>ReLU and its relatives are monotonic: once they turn on, they only keep going. The Life rule turns <em>off</em> again after N&thinsp;=&thinsp;3. To represent that with ReLU, a network needs enough width to &ldquo;fold&rdquo; the curve back down - and finding a working configuration by gradient descent is like finding a winning lottery ticket.</p>
-      <p>The result: minimal ReLU networks rarely learn the rule from scratch; they need more parameters or a lucky initialization. A non-monotonic activation sidesteps the problem entirely, because the bump is already in its vocabulary.</p>
+      <p class="chapter__lead">If the rule is so simple, why do standard networks struggle? The shape of the function is part of the story - and so is the inductive bias of the activation. But the whole story is still genuinely open.</p>
+      <p>One natural suspect is monotonicity. ReLU and its relatives only climb once they turn on, while the Life rule turns <em>off</em> again after N&thinsp;=&thinsp;3. To represent that with ReLU, a network needs enough width to &ldquo;fold&rdquo; the curve back down, and finding a working configuration by gradient descent is like finding a winning lottery ticket. Minimal ReLU networks rarely learn the rule from scratch; they need more parameters or a lucky initialization.</p>
+      <p>But monotonicity itself is not the deciding factor. PReLU is also monotonic, yet in our ablation the minimal PReLU model learned the rule in every sample when its synaptic weights were held static - learning a strictly monotonic activation function on the way. That rules out &ldquo;monotone &rarr; unlearnable,&rdquo; and leaves the real question open. It could be about width, about initialization, about the smoothness of gradients in parameter space, or about some as-yet-unnamed commonality between PReLU and PolyKAN. We find the mystery more interesting than any tidy explanation.</p>
     </section>
 
     <div class="grid-motif" aria-hidden="true"></div>
