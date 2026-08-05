@@ -1,4 +1,4 @@
-// Widget B — the B3/S23 rule as a function of neighbor count.
+// Widget B - the B3/S23 rule as a function of neighbor count.
 //
 // Split into two layers so the module stays Node-importable:
 //   - RULE_POINTS is pure (no DOM) and unit-tested.
@@ -14,6 +14,18 @@ import { fitCanvas, clearCanvas } from "../util/canvas.js";
 export const RULE_POINTS = Array.from({ length: 9 }, (_, n) => ({
   n,
   target: n === 2 || n === 3 ? 1 : 0,
+}));
+
+// Birth: next state of a currently DEAD cell. =1 only at N=3.
+export const BIRTH_POINTS = Array.from({ length: 9 }, (_, n) => ({
+  n,
+  target: n === 3 ? 1 : 0,
+}));
+
+// Survival: next state of a currently LIVE cell. =1 at N in {2,3}.
+export const SURVIVAL_POINTS = Array.from({ length: 9 }, (_, n) => ({
+  n,
+  target: (n === 2 || n === 3) ? 1 : 0,
 }));
 
 // DOM controller for Widget B. All DOM/canvas access is inside this function.
@@ -33,6 +45,8 @@ export function createRuleFunction(canvas) {
     grid: "#d4d9e0",
     label: "#3c4043",
     rule: "#16a34a",
+    birth: "#16a34a",     // green - dead -> alive
+    survival: "#0891b2",  // cyan  - alive -> alive
     relu: "#d97706",
     parabola: "#0891b2",
     probe: "#3c4043",
@@ -75,7 +89,7 @@ export function createRuleFunction(canvas) {
     ctx.lineTo(PAD.l + plotW, PAD.t + plotH);
     ctx.stroke();
 
-    // --- ghost: parabola x² scaled+shifted (cyan) — a non-monotonic
+    // --- ghost: parabola x² scaled+shifted (cyan) - a non-monotonic
     // polynomial that already hugs the bump, hinting why polynomial
     // activations fit naturally. 1 - ((n-2.5)/2.5)^2, clamped to [0,1]. ---
     ctx.strokeStyle = COLORS.parabola;
@@ -90,7 +104,7 @@ export function createRuleFunction(canvas) {
     }
     ctx.stroke();
 
-    // --- ghost: ReLU-ish ray (amber) — monotonic ramp that can't fold back.
+    // --- ghost: ReLU-ish ray (amber) - monotonic ramp that can't fold back.
     // max(0, (n-2)/6): turns on at n=2 (like the rule) but only climbs. ---
     ctx.strokeStyle = COLORS.relu;
     ctx.globalAlpha = 0.5;
@@ -105,27 +119,50 @@ export function createRuleFunction(canvas) {
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // --- the rule: thick step segments (green). Each integer N owns the bin
-    // [N-0.5, N+0.5); verticals appear automatically where neighbors differ,
-    // yielding the flat-0 → block-1 over {2,3} → flat-0 bump. ---
-    ctx.strokeStyle = COLORS.rule;
-    ctx.lineWidth = 4;
-    ctx.lineJoin = "miter";
-    ctx.beginPath();
-    ctx.moveTo(xOf(0), yOf(RULE_POINTS[0].target));
-    for (let n = 0; n <= 8; n++) {
-      const v = RULE_POINTS[n].target;
-      ctx.lineTo(xOf(Math.max(0, n - 0.5)), yOf(v));
-      ctx.lineTo(xOf(Math.min(8, n + 0.5)), yOf(v));
-    }
-    ctx.stroke();
-
-    // data points at each integer N
-    ctx.fillStyle = COLORS.rule;
-    for (const { n, target } of RULE_POINTS) {
+    // --- the rule as TWO next-state curves, so the role of the current cell
+    // state is visible: birth (green) and survival (cyan). Each integer N
+    // owns the bin [N-0.5, N+0.5); verticals appear where neighbors differ. ---
+    function drawStepCurve(points, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.lineJoin = "miter";
       ctx.beginPath();
-      ctx.arc(xOf(n), yOf(target), 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(xOf(0), yOf(points[0].target));
+      for (let n = 0; n <= 8; n++) {
+        const v = points[n].target;
+        ctx.lineTo(xOf(Math.max(0, n - 0.5)), yOf(v));
+        ctx.lineTo(xOf(Math.min(8, n + 0.5)), yOf(v));
+      }
+      ctx.stroke();
+      ctx.fillStyle = color;
+      for (const { n, target } of points) {
+        ctx.beginPath();
+        ctx.arc(xOf(n), yOf(target), 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    drawStepCurve(SURVIVAL_POINTS, COLORS.survival); // cyan: alive -> alive
+    drawStepCurve(BIRTH_POINTS, COLORS.birth);       // green: dead -> alive
+
+    // --- legend (top-left of the plot) ---
+    ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    const legend = [
+      { color: COLORS.birth, label: "birth (dead -> alive)" },
+      { color: COLORS.survival, label: "survival (alive -> alive)" },
+    ];
+    let ly = PAD.t + 8;
+    for (const { color, label } of legend) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(PAD.l + 8, ly);
+      ctx.lineTo(PAD.l + 24, ly);
+      ctx.stroke();
+      ctx.fillStyle = COLORS.label;
+      ctx.fillText(label, PAD.l + 30, ly);
+      ly += 14;
     }
 
     // --- tick labels ---
@@ -165,9 +202,9 @@ export function createRuleFunction(canvas) {
 
     // probe label: "if a cell has N live neighbors → …"
     const live = target === 1;
-    const detail = pn === 2 ? "live cell survives"
-      : pn === 3 ? "birth (or survival)"
-      : "dies / stays dead";
+    const detail = pn === 2 ? "alive stays alive; dead stays dead"
+      : pn === 3 ? "becomes alive (birth or survival)"
+      : "becomes dead (death or no birth)";
     const text = `N=${pn} → ${live ? "ALIVE" : "dead"}  ·  ${detail}`;
     ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
     const tw = ctx.measureText(text).width;

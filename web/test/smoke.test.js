@@ -31,6 +31,15 @@ test("rule-function module imports without DOM access", async () => {
   for (const { n, target } of m.RULE_POINTS) {
     assert.equal(target, (n === 2 || n === 3) ? 1 : 0);
   }
+  // B/S split: birth = 0->1 only at N=3; survival = 1->1 at N in {2,3}.
+  assert.ok(Array.isArray(m.BIRTH_POINTS) && m.BIRTH_POINTS.length === 9);
+  assert.ok(Array.isArray(m.SURVIVAL_POINTS) && m.SURVIVAL_POINTS.length === 9);
+  for (const { n, target } of m.BIRTH_POINTS) {
+    assert.equal(target, n === 3 ? 1 : 0);
+  }
+  for (const { n, target } of m.SURVIVAL_POINTS) {
+    assert.equal(target, (n === 2 || n === 3) ? 1 : 0);
+  }
   assert.equal(typeof m.createRuleFunction, "function");
 });
 

@@ -55,12 +55,12 @@
     <!-- Chapter 2 - The rule, as a function -->
     <section class="chapter" id="ch-rule-function">
       <h2 class="chapter__title">The rule, as a function</h2>
-      <p class="chapter__lead">Strip away the grid and Life&rsquo;s update becomes a function of a single number: the live-neighbor count N. The network&rsquo;s entire job is to learn this shape.</p>
-      <p>For N&thinsp;=&thinsp;2 or 3 the next state can be alive; everywhere else it cannot. That makes the rule a non-monotonic bump - exactly the kind of shape a monotonic function like ReLU fits poorly, but a small polynomial fits naturally.</p>
+      <p class="chapter__lead">Strip away the grid and Life&rsquo;s update becomes a function of the live-neighbor count N - but also of the cell&rsquo;s current state. The network&rsquo;s entire job is to learn this shape.</p>
+      <p>In words: with 2 live neighbors a cell keeps its state, with 3 it becomes alive, and otherwise it becomes dead. The two curves below make the role of the current cell explicit - survival (alive stays alive) and birth (dead becomes alive). The bump is non-monotonic, which is the kind of shape a monotonic function like ReLU fits poorly but a small polynomial fits naturally.</p>
       <div class="canvas-card">
         <canvas id="rule-function" width="720" height="360"></canvas>
       </div>
-      <p class="caption">Widget B - the B3/S23 rule as a function of neighbor count. Ghost curves hint at why monotonic (ReLU) and linear-quadratic fits behave so differently.</p>
+      <p class="caption">Widget B - the B3/S23 rule as a function of neighbor count, split into birth and survival. Ghost curves hint at why monotonic (ReLU) and linear-quadratic fits behave so differently.</p>
     </section>
 
     <div class="grid-motif" aria-hidden="true"></div>
