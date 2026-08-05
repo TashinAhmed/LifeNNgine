@@ -253,7 +253,7 @@ export function createArena(mountEl, opts = {}) {
   stepsWrap.appendChild(stepsEl);
   const pauseBtn = doc.createElement("button");
   pauseBtn.type = "button";
-  pauseBtn.textContent = "Pause";
+  pauseBtn.textContent = "Play";
   const resetBtn = doc.createElement("button");
   resetBtn.type = "button";
   resetBtn.textContent = "Reset";
@@ -323,7 +323,7 @@ export function createArena(mountEl, opts = {}) {
   let trainRng;
   let t = 0;
   let stepCount = 0;
-  let userPaused = false;
+  let userPaused = true; // start paused - reader hits Play when ready
   let visPaused = false;
   let raf = 0;
 

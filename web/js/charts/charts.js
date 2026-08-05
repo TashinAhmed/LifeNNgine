@@ -208,7 +208,7 @@ export function renderSuccessBars(canvas, data) {
     const pad = { l: 96, r: 44, t: 16, b: 40 };
     const { plotW, plotH, xScale } = chartFrame(ctx, cssW, cssH, {
       pad,
-      xDomain: [0, 1],
+      xDomain: [0, 1.15],
       xTicks: [0, 0.25, 0.5, 0.75, 1],
       xLabel: "success rate",
     });
@@ -343,7 +343,7 @@ export function renderDensitySweep(canvas, data) {
       pad,
       xDomain: [dMin, dMax],
       xTicks: niceXTicks(dMin, dMax),
-      yDomain: [0, 1],
+      yDomain: [0, 1.15],
       yTicks: [0, 0.25, 0.5, 0.75, 1],
       xLabel: "initial density",
       yLabel: "success rate",
@@ -445,7 +445,7 @@ export function renderAblation(canvas, data) {
     const pad = { l: 48, r: 20, t: 56, b: 64 };
     const { plotW, plotH, pad: P, yScale } = chartFrame(ctx, cssW, cssH, {
       pad,
-      yDomain: [0, 1],
+      yDomain: [0, 1.15],
       yTicks: [0, 0.25, 0.5, 0.75, 1],
       yLabel: "success rate",
     });
