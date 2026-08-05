@@ -5,8 +5,8 @@ import { createLifeGrid } from "./widgets/life-grid.js";
 import { createRuleFunction } from "./widgets/rule-function.js";
 import { createActivationPlot } from "./widgets/activation-plot.js";
 import { createArena } from "./arena.js";
-import { renderSuccessBars, renderDensitySweep, renderAblation, renderPCA } from "./charts/charts.js";
-import { SUCCESS_RATES, DENSITY_SWEEP, ABLATION, PCA_ILLUSTRATIVE } from "./data/results.js";
+import { renderSuccessBars, renderDensitySweep, renderAblation } from "./charts/charts.js";
+import { SUCCESS_RATES, DENSITY_SWEEP, ABLATION } from "./data/results.js";
 
 // Single reduced-motion policy for the whole page (spec §10). Read once and
 // passed to every controller that cares, so there is one source of truth.
@@ -142,9 +142,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const vizAblation = document.getElementById("viz-ablation");
   if (vizAblation) register(vizAblation, renderAblation(vizAblation, ABLATION));
-
-  const vizPca = document.getElementById("viz-pca");
-  if (vizPca) register(vizPca, renderPCA(vizPca, PCA_ILLUSTRATIVE));
 
   // Pause off-screen animation/training to save CPU (spec §10). Feature-detected:
   // browsers without IntersectionObserver simply keep everything running.

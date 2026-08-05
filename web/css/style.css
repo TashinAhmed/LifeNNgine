@@ -243,6 +243,15 @@ code {
   max-height: none;
 }
 
+/* Static figure inside a canvas-card (e.g. paper-derived PCA image). */
+.canvas-card .viz-figure {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--bg);
+  border-radius: 4px;
+}
+
 /* ---------- Controls ---------- */
 .controls {
   display: flex;
