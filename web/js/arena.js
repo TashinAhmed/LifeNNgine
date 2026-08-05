@@ -323,6 +323,8 @@ export function createArena(mountEl, opts = {}) {
   let trainRng;
   let t = 0;
   let stepCount = 0;
+  let refGen = 0;                // how many Life steps the reference grid has advanced
+  const REF_ADVANCE_EVERY = 100; // training steps between reference advances
   let userPaused = true; // start paused - reader hits Play when ready
   let visPaused = false;
   let raf = 0;
@@ -360,6 +362,7 @@ export function createArena(mountEl, opts = {}) {
     trainRng = mulberry32((curSeed ^ 0x9e3779b9) >>> 0);
     t = 0;
     stepCount = 0;
+    refGen = 0;
     for (const r of [leftLoss, leftAcc, rightLoss, rightAcc]) { r.head = 0; r.len = 0; }
 
     stepsEl.textContent = "0";
@@ -451,6 +454,15 @@ export function createArena(mountEl, opts = {}) {
     ringPush(leftAcc, gridAccuracy(lRes.pred, batch.target));
     ringPush(rightAcc, gridAccuracy(rRes.pred, batch.target));
     stepCount++;
+    if (stepCount % REF_ADVANCE_EVERY === 0) {
+      // Evolve the displayed reference by one Life generation so gliders
+      // and ash emerge over a long run. Training batches are unaffected.
+      valInput = lifeStep(valInput, H, W);
+      valTrue = lifeStep(valInput, H, W);
+      refGen++;
+      drawBinary(inputCanvas, valInput, "#16a34a");
+      drawBinary(trueCanvas, valTrue, "#16a34a");
+    }
   }
 
   function render() {
